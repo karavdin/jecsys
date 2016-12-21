@@ -7,8 +7,8 @@
   gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrectionUncertainty.cc+");
   gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectionUncertainty.cc+");
 
-  gROOT->ProcessLine(".L compareJECversions.C+");
-  gROOT->ProcessLine(".exception");
+  gROOT->ProcessLine(".L test/compareJECversions.C+");
+  //  gROOT->ProcessLine(".exception");
   
   // Test Run2015D V3M2 L2L3Res
   //compareJECversions("AK4PFchs",false,false,true); // Fig.24topleft

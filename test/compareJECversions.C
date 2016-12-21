@@ -25,7 +25,8 @@ bool _usenegative = false;
 bool _usepositive = false;
 
 bool _useptgen = true; // iterate to produce JEC vs pTgen
-bool _dothree  = true; // compare three JECs instead of just two
+//bool _dothree  = true; // compare three JECs instead of just two
+bool _dothree  = false; // compare three JECs instead of just two
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
 const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
@@ -70,8 +71,10 @@ void setEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
   jec->setJetE(e);
   jec->setNPV(npv);
   // L1FastJet
-  bool is5 = (_alg=="AK5PF"||_alg=="AK5PFchs"||_alg=="AK5CALO");
-  double jeta = TMath::Pi()*(is5 ? 0.5*0.5 : 0.7*0.7);
+  //  bool is5 = (_alg=="AK5PF"||_alg=="AK5PFchs"||_alg=="AK5CALO");
+  bool is4 = (_alg=="AK4PF"||_alg=="AK4PFchs"||_alg=="AK4CALO");
+  //  double jeta = TMath::Pi()*(is5 ? 0.5*0.5 : 0.7*0.7);
+  double jeta = TMath::Pi()*(is4 ? 0.4*0.4 : 0.8*0.8);//TEST
   jec->setJetA(jeta);
   jec->setRho(rho);
 
@@ -93,7 +96,7 @@ Double_t funcCorrPt(Double_t *x, Double_t *p) {
 
 double getEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
 		 int mu = _mu) {
-
+  // std::cout<<"getEtaPtE eta = "<<eta<<std::endl;
   setEtaPtE(jec, eta, pt, e, mu);
 
   // if using pTgen, need to iterate to solve ptreco
@@ -107,8 +110,10 @@ double getEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
 
     setEtaPtE(jec, eta, ptreco, e, mu);
   }
-
-  return (jec->getCorrection());
+  double JEC_val = jec->getCorrection();
+  //  std::cout<<"getEtaPtE JEC = "<<JEC_val<<std::endl;
+  //  std::cout<<"getEtaPtE eta in the end = "<<eta<<std::endl;
+  return JEC_val;
 } // getEtaPtE
 
 double getEtaPtUncert(JetCorrectionUncertainty *unc,
@@ -167,7 +172,7 @@ void compareJECversions(string algo="AK4PFchs",
   //string sid2 = (_mc ? "Summer15_25nsV6_MC" : "Summer15_25nsV6_DATA");
   //string sid2 = (_mc ? "Fall15_25nsV1_MC" : "Fall15_25nsV1_DATA");
   //  string sid2 = (_mc ? "Spring16_25nsV8p2_MC" : "Spring16_25nsV8p2_DATA");
-  string sid2 = (_mc ? "Spring16_23Sep2016V2_MC" : "Spring16_23Sep2016BCDV1_DATA");
+  string sid2 = (_mc ? "Spring16_23Sep2016V1_MC" : "Spring16_23Sep2016BCDV1_DATA");
   const char *cid2 = sid2.c_str();
   const char *a2 = a;
   //const char *s2 = "1.3 fb^{-1} (13 TeV)";
@@ -175,8 +180,8 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s2 = "2.1 fb^{-1} (13 TeV)";
   //const char *s2 = "76Xv1 (13 TeV)";
   //const char *s2s = "76X";
-  const char *s2 = "Spring16_23Sep2016BCDV1";// (13 TeV)";
-  const char *s2s = "BCD";
+  const char *s2 = "Spring16_23SepBCDV1";// (13 TeV)";
+  const char *s2s = "BCDV1";
   // PATCH 2012 with clones
   //if (algo=="AK4PF") a2 = "AK5PF";
   //if (algo=="AK4PFchs") a2 = "AK5PFchs";
@@ -193,8 +198,8 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s1 = "1.3 fb^{-1} (13 TeV)";
   //const char *s1 = "74Xv7 (13 TeV)";
   //const char *s1s = "74X";
-  const char *s1 = "Spring16_23Sep2016BCDV2";// (13 TeV)";
-  const char *s1s = "BCD";
+  const char *s1 = "Spring16_23SepBCDV2";// (13 TeV)";
+  const char *s1s = "BCDV2";
   // PATCH 2012 with clones
   //if (algo=="AK4PF") a1 = "AK5PF";
   //if (algo=="AK4PFchs") a1 = "AK5PFchs";
@@ -403,7 +408,8 @@ void compareJECversions(string algo="AK4PFchs",
 
   //lumi_7TeV  = (dothree ? "36 pb^{-1} + 4.9 fb^{-1}" : "4.9 fb^{-1}");
   //lumi_13TeV  = "19.8 fb^{-1} (8 TeV) + 1.3--2.1 fb^{-1}";
-  lumi_13TeV  = "27 fb^{-1} (13 TeV)";
+  //  lumi_13TeV  = "27 fb^{-1} (13 TeV)";
+  lumi_13TeV  = "36 fb^{-1} (13 TeV)";
 
   TH1D *h1a = (TH1D*)h->Clone(Form("h1a_%s",a));
   TCanvas *c1a = tdrCanvas(Form("c1a_%s",a),h1a,4,11,kSquare);
@@ -415,24 +421,28 @@ void compareJECversions(string algo="AK4PFchs",
   TCanvas *c1e = tdrCanvas(Form("c1e_%s",a),h1e,4,11,kSquare);
 
   TCanvas *c1d = tdrCanvas(Form("c1d_%s",a),hpt,4,11,kSquare);
+  TCanvas *c1d25 = tdrCanvas(Form("c1d25_%s",a),hpt,4,11,kSquare);
   if (_paper) hpt->SetTitleOffset(0.97); // comma otherwise cut off
 
   TGraph *g1a = new TGraph(0);
   TGraph *g1b = new TGraph(0);
   TGraph *g1c = new TGraph(0);
   TGraph *g1d = new TGraph(0);
+  TGraph *g1d25 = new TGraph(0);
   TGraph *g1e = new TGraph(0);
   //
   TGraph *g2a = new TGraph(0);
   TGraph *g2b = new TGraph(0);
   TGraph *g2c = new TGraph(0);
   TGraph *g2d = new TGraph(0);
+  TGraph *g2d25 = new TGraph(0);
   TGraph *g2e = new TGraph(0);
   //
   TGraph *g3a = new TGraph(0);
   TGraph *g3b = new TGraph(0);
   TGraph *g3c = new TGraph(0);
   TGraph *g3d = new TGraph(0);
+  TGraph *g3d25 = new TGraph(0);
   TGraph *g3e = new TGraph(0);
   //
   TGraph *g21a = new TGraph(0);
@@ -444,6 +454,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g1b_e = new TGraphErrors(0);
   TGraphErrors *g1c_e = new TGraphErrors(0);
   TGraphErrors *g1d_e = new TGraphErrors(0);
+  TGraphErrors *g1d25_e = new TGraphErrors(0);
   TGraphErrors *g1e_e = new TGraphErrors(0);
   TGraph *g1a_pl = new TGraph(0);
   TGraph *g1a_mn = new TGraph(0);
@@ -453,6 +464,8 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g1c_mn = new TGraph(0);
   TGraph *g1d_pl = new TGraph(0);
   TGraph *g1d_mn = new TGraph(0);
+  TGraph *g1d25_pl = new TGraph(0);
+  TGraph *g1d25_mn = new TGraph(0);
   TGraph *g1e_pl = new TGraph(0);
   TGraph *g1e_mn = new TGraph(0);
 
@@ -460,6 +473,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g2b_e = new TGraphErrors(0);
   TGraphErrors *g2c_e = new TGraphErrors(0);
   TGraphErrors *g2d_e = new TGraphErrors(0);
+  TGraphErrors *g2d25_e = new TGraphErrors(0);
   TGraphErrors *g2e_e = new TGraphErrors(0);
   TGraph *g2a_pl = new TGraph(0);
   TGraph *g2a_mn = new TGraph(0);
@@ -469,6 +483,8 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g2c_mn = new TGraph(0);
   TGraph *g2d_pl = new TGraph(0);
   TGraph *g2d_mn = new TGraph(0);
+  TGraph *g2d25_pl = new TGraph(0);
+  TGraph *g2d25_mn = new TGraph(0);
   TGraph *g2e_pl = new TGraph(0);
   TGraph *g2e_mn = new TGraph(0);
 
@@ -476,6 +492,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g3b_e = new TGraphErrors(0);
   TGraphErrors *g3c_e = new TGraphErrors(0);
   TGraphErrors *g3d_e = new TGraphErrors(0);
+  TGraphErrors *g3d25_e = new TGraphErrors(0);
   TGraphErrors *g3e_e = new TGraphErrors(0);
   TGraph *g3a_pl = new TGraph(0);
   TGraph *g3a_mn = new TGraph(0);
@@ -485,6 +502,8 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g3c_mn = new TGraph(0);
   TGraph *g3d_pl = new TGraph(0);
   TGraph *g3d_mn = new TGraph(0);
+  TGraph *g3d25_pl = new TGraph(0);
+  TGraph *g3d25_mn = new TGraph(0);
   TGraph *g3e_pl = new TGraph(0);
   TGraph *g3e_mn = new TGraph(0);
 
@@ -528,6 +547,7 @@ void compareJECversions(string algo="AK4PFchs",
   for (int i = 1; i != h->GetNbinsX()+1; ++i) {
 
     double eta = h->GetBinCenter(i);
+    //    std::cout<<"eta = "<<eta<<std::endl;
     if (fabs(eta)>4.7) continue;
 
     // ***** Pt = 30, 50, 80, 120, 200, 500 *****
@@ -537,14 +557,18 @@ void compareJECversions(string algo="AK4PFchs",
 	TGraphErrors *g21 = g21s[j];
 	double pt = ptbins[j];
 	double energy = pt*cosh(eta);
-
+	//	std::cout<<"energy = "<<energy<<std::endl;
 	if (energy < 6500.) {
 	  // Asymmetric corrections now
-	  double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			    + getEtaPtE(JEC1, -eta, pt, energy));
-	  double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			    + getEtaPtE(JEC2, -eta, pt, energy));
-
+	  //	  std::cout<<"eta = "<<eta<<std::endl;
+	  //	  std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
+	  double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+	  		    + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	  //	  double y1 = getEtaPtE(JEC1, eta, pt, energy); //TEST
+	  // std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
+	  double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			    + getEtaPtE(JEC2, (-1)*eta, pt, energy));
+	  // std::cout<<"Point #"<<g21->GetN()<<" eta, R = "<<eta<<", "<<y2/y1<<std::endl;
 	  g21->SetPoint(g21->GetN(), eta, y2/y1);
 	} // energy < 6500
       } // for j
@@ -557,24 +581,24 @@ void compareJECversions(string algo="AK4PFchs",
       
       if (energy < 6500.) {
 	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			  + getEtaPtE(JEC1, -eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			  + getEtaPtE(JEC2, -eta, pt, energy));
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
 	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta, pt, energy)
-				+ getEtaPtE(JEC3, -eta, pt, energy));
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
 	// negative side
 	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, -eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, -eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, -eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
 	}
 	// positive side
 	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, +eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, +eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, +eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
 	}
 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
@@ -609,24 +633,24 @@ void compareJECversions(string algo="AK4PFchs",
       
       if (energy < 6500.) {
 	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			 + getEtaPtE(JEC1, -eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			 + getEtaPtE(JEC2, -eta, pt, energy));
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			 + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			 + getEtaPtE(JEC2, (-1)*eta, pt, energy));
 	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta, pt, energy)
-			       + getEtaPtE(JEC3, -eta, pt, energy));
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+			       + getEtaPtE(JEC3, (-1)*eta, pt, energy));
 	// negative side
 	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, -eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, -eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, -eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
 	}
 	// positive side
 	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, +eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, +eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, +eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
 	}
 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
@@ -661,24 +685,24 @@ void compareJECversions(string algo="AK4PFchs",
       
       if (energy < 6500.) {
 	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			 + getEtaPtE(JEC1, -eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			 + getEtaPtE(JEC2, -eta, pt, energy));
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			 + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			 + getEtaPtE(JEC2, (-1)*eta, pt, energy));
 	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta, pt, energy)
-			       + getEtaPtE(JEC3, -eta, pt, energy));
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+			       + getEtaPtE(JEC3, (-1)*eta, pt, energy));
 	// negative side
 	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, -eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, -eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, -eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
 	}
 	// positive side
 	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, +eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, +eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, +eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
 	}
 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
@@ -713,24 +737,24 @@ void compareJECversions(string algo="AK4PFchs",
      
       if (pt > 10.) {
 	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			  + getEtaPtE(JEC1, -eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			  + getEtaPtE(JEC2, -eta, pt, energy));
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
 	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta, pt, energy)
-				+ getEtaPtE(JEC3, -eta, pt, energy));
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
 	// negative side
 	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, -eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, -eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, -eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
 	}
 	// positive side
 	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, +eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, +eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, +eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
 	}
 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
@@ -769,24 +793,24 @@ void compareJECversions(string algo="AK4PFchs",
       
       if (pt>10 && energy < 6500.) {
 	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			  + getEtaPtE(JEC1, -eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			  + getEtaPtE(JEC2, -eta, pt, energy));
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
 	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta, pt, energy)
-				+ getEtaPtE(JEC3, -eta, pt, energy));
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
 	// negative side
 	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, -eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, -eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, -eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
 	}
 	// positive side
 	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, +eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, +eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, +eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
 	}
 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
@@ -812,6 +836,58 @@ void compareJECversions(string algo="AK4PFchs",
 	g3d_e->SetPointError(i-1, 0., y3*e3);
       }
     } // *** Eta = 0
+
+ // ***** Eta = 2.5
+    {
+      double eta = 2.5;
+      double pt = hpt->GetBinCenter(i);
+      double energy = pt*cosh(eta);
+      
+      if (pt>10 && energy < 6500.) {
+	// Asymmetric corrections now
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
+	double y3(0);
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
+	// negative side
+	if (_usenegative) {
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
+	}
+	// positive side
+	if (_usepositive) {
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
+	}
+	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
+	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
+	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
+	
+	g1d25->SetPoint(g1d25->GetN(), pt, y1);
+	g2d25->SetPoint(g2d25->GetN(), pt, y2);
+	g3d25->SetPoint(g3d25->GetN(), pt, y3);
+	//
+	g1d25_pl->SetPoint(g1d25_pl->GetN(), pt, y1*(1+e1));
+	g1d25_mn->SetPoint(g1d25_mn->GetN(), pt, y1*(1-e1));
+	g1d25_e->SetPoint(i-1, pt, y1);
+	g1d25_e->SetPointError(i-1, 0., y1*e1);
+	//
+	g2d25_pl->SetPoint(g2d25_pl->GetN(), pt, y2*(1+e2));
+	g2d25_mn->SetPoint(g2d25_mn->GetN(), pt, y2*(1-e2));
+	g2d25_e->SetPoint(i-1, pt, y2);
+	g2d25_e->SetPointError(i-1, 0., y2*e2);
+	//
+	g3d25_pl->SetPoint(g3d25_pl->GetN(), pt, y3*(1+e3));
+	g3d25_mn->SetPoint(g3d25_mn->GetN(), pt, y3*(1-e3));
+	g3d25_e->SetPoint(i-1, pt, y3);
+	g3d25_e->SetPointError(i-1, 0., y3*e3);
+      }
+    } // *** Eta = 2.5
   } // for i
 
   // Generic legend
@@ -833,6 +909,8 @@ void compareJECversions(string algo="AK4PFchs",
   g3c->SetFillColor(kGreen+2);
   g3d->SetFillStyle(3003);
   g3d->SetFillColor(kGreen+2);
+  g3d25->SetFillStyle(3003);
+  g3d25->SetFillColor(kGreen+2);
   g3e->SetFillStyle(3003);
   g3e->SetFillColor(kGreen+2);
 
@@ -844,6 +922,8 @@ void compareJECversions(string algo="AK4PFchs",
   g1c->SetFillColor(kBlue);
   g1d->SetFillStyle(3003);
   g1d->SetFillColor(kBlue);
+  g1d25->SetFillStyle(3003);
+  g1d25->SetFillColor(kBlue);
   g1e->SetFillStyle(3003);
   g1e->SetFillColor(kBlue);
 
@@ -855,6 +935,8 @@ void compareJECversions(string algo="AK4PFchs",
   g2c->SetFillColor(kRed);
   g2d->SetFillStyle(3003);
   g2d->SetFillColor(kRed);
+  g2d25->SetFillStyle(3003);
+  g2d25->SetFillColor(kRed);
   g2e->SetFillStyle(3003);
   g2e->SetFillColor(kRed);
   
@@ -863,11 +945,14 @@ void compareJECversions(string algo="AK4PFchs",
   tex->SetTextSize(0.045);
 
   map<string,const char*> texmap;
-  texmap["AK5PF"] = "R = 0.5, PF";
-  texmap["AK5PFchs"] = "R = 0.5, PF+CHS";
-  texmap["AK7PF"] = "R = 0.7, PF";
-  texmap["AK7PFchs"] = "R = 0.7, PF+CHS";
-
+  // texmap["AK5PF"] = "R = 0.5, PF";
+  // texmap["AK5PFchs"] = "R = 0.5, PF+CHS";
+  // texmap["AK7PF"] = "R = 0.7, PF";
+  // texmap["AK7PFchs"] = "R = 0.7, PF+CHS";
+  texmap["AK4PF"] = "R = 0.4, PF";
+  texmap["AK4PFchs"] = "R = 0.4, PF+CHS";
+  texmap["AK8PF"] = "R = 0.8, PF";
+  texmap["AK8PFchs"] = "R = 0.8, PF+CHS";
 
   // ***** Pt = 30
   {
@@ -933,7 +1018,10 @@ void compareJECversions(string algo="AK4PFchs",
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
     //TLegend *leg1a = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    TLegend *leg1a = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
+    //    TLegend *leg1a = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
+    TLegend *leg1a = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1a->SetTextSize(0.03);
+    //    TLegend *leg1a = tdrLeg(0.17, dothree ? 0.16 : 0.22, 0.47, 0.50);
     leg1a->SetHeader(texmap[a]);
     leg1a->AddEntry(g2a,s2,"LPF");
     leg1a->AddEntry(g1a,s1,"LPF");
@@ -1008,7 +1096,11 @@ void compareJECversions(string algo="AK4PFchs",
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
     //TLegend *leg1b = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    TLegend *leg1b = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+    //    TLegend *leg1b = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+
+    TLegend *leg1b = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1b->SetTextSize(0.03);
+
     leg1b->SetHeader(texmap[a]);
     leg1b->AddEntry(g2b,s2,"LPF");
     leg1b->AddEntry(g1b,s1,"LPF");
@@ -1076,7 +1168,9 @@ void compareJECversions(string algo="AK4PFchs",
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
     //TLegend *leg1c = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    TLegend *leg1c = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+    //    TLegend *leg1c = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+    TLegend *leg1c = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1c->SetTextSize(0.03);
     leg1c->SetHeader(texmap[a]);
     leg1c->AddEntry(g2c,s2,"LPF");
     leg1c->AddEntry(g1c,s1,"LPF");
@@ -1149,7 +1243,9 @@ void compareJECversions(string algo="AK4PFchs",
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
     //TLegend *leg1e = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    TLegend *leg1e = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+    //    TLegend *leg1e = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+    TLegend *leg1e = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1e->SetTextSize(0.03);
     leg1e->SetHeader(texmap[a]);
     leg1e->AddEntry(g2e,s2,"LPF");
     leg1e->AddEntry(g1e,s1,"LPF");
@@ -1219,11 +1315,83 @@ void compareJECversions(string algo="AK4PFchs",
 
     //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
     //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
+    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
+    TLegend *leg1d = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1d->SetTextSize(0.03);
     leg1d->SetHeader(texmap[a]);
     leg1d->AddEntry(g2d,s2,"LPF");
     leg1d->AddEntry(g1d,s1,"LPF");
     if (dothree) leg1d->AddEntry(g3d,s3,"LPF");
+
+    gPad->RedrawAxis();
+  }
+
+// ***** Eta = 2.5
+  {
+    c1d25->cd();
+    c1d25->SetLogx();
+    
+    if (dothree) {
+      g3d25_e->SetFillStyle(3003);
+      g3d25_e->SetFillColor(kGreen+2);
+      g3d25_e->Draw("SAME E3");
+      g3d25_pl->SetLineColor(kGreen-9);
+      g3d25_pl->SetLineStyle(kSolid);
+      g3d25_pl->Draw("SAMEL");
+      g3d25_mn->SetLineColor(kGreen-9);
+      g3d25_mn->SetLineStyle(kSolid);
+      g3d25_mn->Draw("SAMEL");
+    }
+
+    g1d25_e->SetFillStyle(3003);
+    g1d25_e->SetFillColor(kBlue);
+    g1d25_e->Draw("SAME E3");
+    g1d25_pl->SetLineColor(kBlue-9);
+    g1d25_pl->SetLineStyle(kSolid);
+    g1d25_pl->Draw("SAMEL");
+    g1d25_mn->SetLineColor(kBlue-9);
+    g1d25_mn->SetLineStyle(kSolid);
+    g1d25_mn->Draw("SAMEL");
+
+    g2d25_e->SetFillStyle(3003);
+    g2d25_e->SetFillColor(kRed);
+    g2d25_e->Draw("SAME E3");
+    g2d25_pl->SetLineColor(kRed-9);
+    g2d25_pl->SetLineStyle(kSolid);
+    g2d25_pl->Draw("SAMEL");
+    g2d25_mn->SetLineColor(kRed-9);
+    g2d25_mn->SetLineStyle(kSolid);
+    g2d25_mn->Draw("SAMEL");
+        
+    if (dothree) {
+      g3d25->SetMarkerStyle(kOpenSquare);
+      g3d25->SetMarkerColor(kGreen+2);
+      g3d25->SetLineColor(kGreen+2);
+      g3d25->Draw("SAMEPL");
+    }
+
+    g1d25->SetMarkerStyle(kFullSquare);
+    g1d25->SetMarkerColor(kBlue);
+    g1d25->SetLineColor(kBlue);
+    g1d25->Draw("SAMEPL");
+
+    g2d25->SetMarkerStyle(kFullCircle);
+    g2d25->SetMarkerColor(kRed);
+    g2d25->SetLineColor(kRed);
+    g2d25->Draw("SAMEPL");
+
+    tex->DrawLatex(0.19,0.75,"|#eta| = 2.5");
+    if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
+
+    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
+    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
+    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
+    TLegend *leg1d25 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1d25->SetTextSize(0.03);
+    leg1d25->SetHeader(texmap[a]);
+    leg1d25->AddEntry(g2d,s2,"LPF");
+    leg1d25->AddEntry(g1d,s1,"LPF");
+    if (dothree) leg1d25->AddEntry(g3d,s3,"LPF");
 
     gPad->RedrawAxis();
   }
@@ -1235,6 +1403,7 @@ void compareJECversions(string algo="AK4PFchs",
     c1b->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Pt100.pdf",a,cm,cs));
     c1c->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Pt1000.pdf",a,cm,cs));
     c1d->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta00.pdf",a,cm,cs));
+    c1d25->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta25.pdf",a,cm,cs));
     c1e->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Q1000.pdf",a,cm,cs));
   }
   if (_C) {
@@ -1242,6 +1411,7 @@ void compareJECversions(string algo="AK4PFchs",
     c1b->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Pt100.C",a,cm,cs));
     c1c->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Pt1000.C",a,cm,cs));
     c1d->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta00.C",a,cm,cs));
+    c1d25->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta25.C",a,cm,cs));
     c1e->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Q1000.C",a,cm,cs));
   }
 
