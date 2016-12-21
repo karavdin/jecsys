@@ -166,7 +166,8 @@ void compareJECversions(string algo="AK4PFchs",
   // 2015 JEC, 76X
   //string sid2 = (_mc ? "Summer15_25nsV6_MC" : "Summer15_25nsV6_DATA");
   //string sid2 = (_mc ? "Fall15_25nsV1_MC" : "Fall15_25nsV1_DATA");
-  string sid2 = (_mc ? "Spring16_25nsV8p2_MC" : "Spring16_25nsV8p2_DATA");
+  //  string sid2 = (_mc ? "Spring16_25nsV8p2_MC" : "Spring16_25nsV8p2_DATA");
+  string sid2 = (_mc ? "Spring16_23Sep2016V2_MC" : "Spring16_23Sep2016BCDV1_DATA");
   const char *cid2 = sid2.c_str();
   const char *a2 = a;
   //const char *s2 = "1.3 fb^{-1} (13 TeV)";
@@ -174,8 +175,8 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s2 = "2.1 fb^{-1} (13 TeV)";
   //const char *s2 = "76Xv1 (13 TeV)";
   //const char *s2s = "76X";
-  const char *s2 = "80Xv8 G";// (13 TeV)";
-  const char *s2s = "G";
+  const char *s2 = "Spring16_23Sep2016BCDV1";// (13 TeV)";
+  const char *s2s = "BCD";
   // PATCH 2012 with clones
   //if (algo=="AK4PF") a2 = "AK5PF";
   //if (algo=="AK4PFchs") a2 = "AK5PFchs";
@@ -184,7 +185,7 @@ void compareJECversions(string algo="AK4PFchs",
   //string sid1 = (_mc ? "Winter14_V8_MC" : "Winter14_V8_DATA");
   // 74X JEC
   //string sid1 = (_mc ? "Summer15_25nsV7_MC" : "Summer15_25nsV7_DATA");
-  string sid1 = (_mc ? "Spring16_25nsV8BCD_MC" : "Spring16_25nsV8BCD_DATA");
+  string sid1 = (_mc ? "Spring16_23Sep2016V2_MC" : "Spring16_23Sep2016BCDV2_DATA");
   const char *cid1 = sid1.c_str();
   const char *a1 = a;
   //const char *s1 = "20 fb^{-1} (8 TeV)";
@@ -192,7 +193,7 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s1 = "1.3 fb^{-1} (13 TeV)";
   //const char *s1 = "74Xv7 (13 TeV)";
   //const char *s1s = "74X";
-  const char *s1 = "80Xv8 BCD";// (13 TeV)";
+  const char *s1 = "Spring16_23Sep2016BCDV2";// (13 TeV)";
   const char *s1s = "BCD";
   // PATCH 2012 with clones
   //if (algo=="AK4PF") a1 = "AK5PF";
@@ -204,7 +205,8 @@ void compareJECversions(string algo="AK4PFchs",
   //string sid3 = (_mc ? "Spring16_25nsV6_MC" : "Spring16_25nsV6_DATA");
   //string sid3 = (_mc ? "Spring16_25nsV8F_MC" : "Spring16_25nsV8F_DATA");
   //string sid3 = (_mc ? "Spring16_25nsV8E_MC" : "Spring16_25nsV8E_DATA");
-  string sid3 = (_mc ? "Summer15_50nsV4_MC" : "Summer15_50nsV4_DATA");
+  //  string sid3 = (_mc ? "Summer15_50nsV4_MC" : "Summer15_50nsV4_DATA");
+  string sid3 = (_mc ? "Spring16_25nsV10BCD_MC" : "Spring16_25nsV10BCD_DATA");
   const char *cid3 = sid3.c_str();
   const char *a3 = a;
   //const char *s3 = "20 fb^{-1} (8 TeV)";
@@ -215,8 +217,8 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s3s = "V6";
   //const char *s3 = "80Xv8 F";// (13 TeV)";
   //const char *s3s = "F";
-  const char *s3 = "50ns v4";
-  const char *s3s = "50ns";
+  const char *s3 = "Spring16_25nsV10BCD";
+  const char *s3s = "BCD";
   //const char *s3 = "80Xv8 E";// (13 TeV)";
   //const char *s3s = "E";
   //if (algo=="AK4PF") a3 = "AK5PF";
