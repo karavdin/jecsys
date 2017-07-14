@@ -25,11 +25,13 @@ bool _usenegative = false;
 bool _usepositive = false;
 
 bool _useptgen = true; // iterate to produce JEC vs pTgen
-//bool _dothree  = true; // compare three JECs instead of just two
-bool _dothree  = false; // compare three JECs instead of just two
+bool _dothree  = true; // compare three JECs instead of just two
+//bool _dothree  = false; // compare two JECs
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
-const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
+//const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
+const double _mu = 23.1; // 2016RunH
+//const double _mu = 19.1; // 2016RunBCD
 //const double _lumi = 19800.;
 bool _pdf = true; // save .pdf
 bool _C   = false;//true; // save .C
@@ -168,11 +170,8 @@ void compareJECversions(string algo="AK4PFchs",
   string sgen = (_useptgen ? "corr" : "raw");
   const char *cgen = sgen.c_str();
 
-  // 2015 JEC, 76X
-  //string sid2 = (_mc ? "Summer15_25nsV6_MC" : "Summer15_25nsV6_DATA");
-  //string sid2 = (_mc ? "Fall15_25nsV1_MC" : "Fall15_25nsV1_DATA");
-  //  string sid2 = (_mc ? "Spring16_25nsV8p2_MC" : "Spring16_25nsV8p2_DATA");
-  string sid2 = (_mc ? "Spring16_23Sep2016V1_MC" : "Spring16_23Sep2016BCDV1_DATA");
+  // 2016 JEC, 80X
+  string sid2 = (_mc ? "Summer16_03Feb2017_V0_MC" : "Summer16_03Feb2017BCD_V6_DATA");
   const char *cid2 = sid2.c_str();
   const char *a2 = a;
   //const char *s2 = "1.3 fb^{-1} (13 TeV)";
@@ -180,8 +179,10 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s2 = "2.1 fb^{-1} (13 TeV)";
   //const char *s2 = "76Xv1 (13 TeV)";
   //const char *s2s = "76X";
-  const char *s2 = "Spring16_23SepBCDV1";// (13 TeV)";
-  const char *s2s = "BCDV1";
+  const char *s2 = "Summer16_03Feb2017BCD_V6";// (13 TeV)";
+  // const char *s2 = "MC";// (13 TeV)";
+  // const char *s2s = "MC";
+  const char *s2s = "03FebBCDV6";
   // PATCH 2012 with clones
   //if (algo=="AK4PF") a2 = "AK5PF";
   //if (algo=="AK4PFchs") a2 = "AK5PFchs";
@@ -190,7 +191,10 @@ void compareJECversions(string algo="AK4PFchs",
   //string sid1 = (_mc ? "Winter14_V8_MC" : "Winter14_V8_DATA");
   // 74X JEC
   //string sid1 = (_mc ? "Summer15_25nsV7_MC" : "Summer15_25nsV7_DATA");
-  string sid1 = (_mc ? "Spring16_23Sep2016V2_MC" : "Spring16_23Sep2016BCDV2_DATA");
+  // 2016 80X JEC, Moriond
+  string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_23Sep2016BCDV4_DATA");
+  //  string sid1 = (_mc ? "Summer16_03Feb2017_V0_MC" : "Summer16_03Feb2017BCD_V4_DATA");
+
   const char *cid1 = sid1.c_str();
   const char *a1 = a;
   //const char *s1 = "20 fb^{-1} (8 TeV)";
@@ -198,8 +202,13 @@ void compareJECversions(string algo="AK4PFchs",
   //const char *s1 = "1.3 fb^{-1} (13 TeV)";
   //const char *s1 = "74Xv7 (13 TeV)";
   //const char *s1s = "74X";
-  const char *s1 = "Spring16_23SepBCDV2";// (13 TeV)";
-  const char *s1s = "BCDV2";
+
+  const char *s1 = "Summer16_23Sep2016BCD_V4";// (13 TeV)";
+  const char *s1s = "23SepBCDV4";
+  // const char *s1 = "Summer16_03Feb2017BCD_V4";// (13 TeV)";
+  // const char *s1s = "03FebBCDV4";
+
+
   // PATCH 2012 with clones
   //if (algo=="AK4PF") a1 = "AK5PF";
   //if (algo=="AK4PFchs") a1 = "AK5PFchs";
@@ -211,19 +220,24 @@ void compareJECversions(string algo="AK4PFchs",
   //string sid3 = (_mc ? "Spring16_25nsV8F_MC" : "Spring16_25nsV8F_DATA");
   //string sid3 = (_mc ? "Spring16_25nsV8E_MC" : "Spring16_25nsV8E_DATA");
   //  string sid3 = (_mc ? "Summer15_50nsV4_MC" : "Summer15_50nsV4_DATA");
-  string sid3 = (_mc ? "Spring16_25nsV10BCD_MC" : "Spring16_25nsV10BCD_DATA");
+
+  string sid3 = (_mc ? "Summer16_03Feb2017_V0_MC" : "Summer16_03Feb2017BCD_V3_DATA");
+  //  string sid3 = (_mc ? "Summer16_03Feb2017_V0_MC" : "Summer16_03Feb2017BCD_V5_DATA");
   const char *cid3 = sid3.c_str();
   const char *a3 = a;
   //const char *s3 = "20 fb^{-1} (8 TeV)";
   //const char *s3s = "74X";
   //const char *s3 = "80Xv8 E";// (13 TeV)";
   //const char *s3s = "E";
-  //const char *s3 = "80Xv6 BCD";// (13 TeV)";
+  //const char *s3 = "80Xv6 G";// (13 TeV)";
   //const char *s3s = "V6";
   //const char *s3 = "80Xv8 F";// (13 TeV)";
   //const char *s3s = "F";
-  const char *s3 = "Spring16_25nsV10BCD";
-  const char *s3s = "BCD";
+  const char *s3 = "Summer16_03Feb2017BCD_V3";
+  const char *s3s = "03FebBCDV3";
+  // const char *s3 = "Summer16_03Feb2017BCD_V5";
+  // const char *s3s = "03FebBCDV5";
+
   //const char *s3 = "80Xv8 E";// (13 TeV)";
   //const char *s3s = "E";
   //if (algo=="AK4PF") a3 = "AK5PF";
@@ -271,6 +285,7 @@ void compareJECversions(string algo="AK4PFchs",
   JetCorrectorParameters *JetCorPar2L2 = new JetCorrectorParameters(str);
   str=Form("CondFormats/JetMETObjects/data/%s_L3Absolute_%s.txt",cid2,a2);
   cout << str << endl << flush;
+  //Comment L2L3Res to TEST MC vs DATA 
   JetCorrectorParameters *JetCorPar2L3 = new JetCorrectorParameters(str);
   str=Form("CondFormats/JetMETObjects/data/%s_L2L3Residual_%s.txt",cid2,a2);
   if (!mc) cout << str << endl << flush;
@@ -282,12 +297,12 @@ void compareJECversions(string algo="AK4PFchs",
   vector<JetCorrectorParameters> vParam1;
   if (l1)   vParam1.push_back(*JetCorPar1L1);
   if (l2l3) vParam1.push_back(*JetCorPar1L2);
-  if (l2l3) vParam1.push_back(*JetCorPar1L3);
+  /* //TEST MC vs DATA   if (l2l3) vParam1.push_back(*JetCorPar1L3); */
   if (res && !mc && JetCorPar1)  vParam1.push_back(*JetCorPar1);
   vector<JetCorrectorParameters> vParam2;
   if (l1)   vParam2.push_back(*JetCorPar2L1);
   if (l2l3) vParam2.push_back(*JetCorPar2L2);
-  if (l2l3) vParam2.push_back(*JetCorPar2L3);
+  /* //TEST MC vs DATA   if (l2l3) vParam2.push_back(*JetCorPar2L3); */
   if (res && !mc && JetCorPar2)  vParam2.push_back(*JetCorPar2);
 
   FactorizedJetCorrector *JEC1 = new FactorizedJetCorrector(vParam1);
@@ -343,15 +358,14 @@ void compareJECversions(string algo="AK4PFchs",
   }
 
   //_JEC1 = JEC1;
-
-  TCanvas *c0 = new TCanvas(Form("c0_%s",a),Form("c0_%s",a),600,600);
-
-  TCanvas *c2 = new TCanvas(Form("c2_%s",a),Form("c2_%s",a),600,600);
+  //  TCanvas *c0 = new TCanvas(Form("c0_%s",a),Form("c0_%s",a),600,600);
+  //  TCanvas *c2 = new TCanvas(Form("c2_%s",a),Form("c2_%s",a),600,600);
 
   TH1D *h = new TH1D(Form("h_%s",a),Form(";|#eta|;%s L2L3 residual",a),
 		     50,0,5);
   if (_usenegative) h->GetXaxis()->SetTitle("-|#eta|");
   if (_usepositive) h->GetXaxis()->SetTitle("+|#eta|");
+
   const char *cl1 = (l1 ? "L1" : "");
   const char *cl2l3 = (l2l3 ? "L2L3" : "");
   const char *cpl = (res&&(l1||l2l3) ? "+" : "");
@@ -364,7 +378,7 @@ void compareJECversions(string algo="AK4PFchs",
      97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
      507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
      //_paper ? 1999. : 1890.,
-     2000, 2238, 2500, 2787, 3103, 3450};
+     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4200,4400, 4600, 4800, 5000, 5200, 5400};
   const int ndiv_pt = sizeof(x_pt)/sizeof(x_pt[0])-1;// - (_paper ? 3 : 0);
   TH1D *hpt = new TH1D(Form("hpt_%s",a),
 		       Form(";p_{T,%s} (GeV);%s L2L3 residual",cgen,a),
@@ -388,6 +402,7 @@ void compareJECversions(string algo="AK4PFchs",
   h->SetMinimum(0.3);
   h->SetMaximum(2.0);
   if (_paper) {
+    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.6,1.6);
     if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.5,1.4);
     if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.85,1.8);
     if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.85,1.45);
@@ -397,19 +412,21 @@ void compareJECversions(string algo="AK4PFchs",
     //if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.85,1.45);
     //if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.80,1.20);
     //if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.96,1.06);
-    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.95,1.15);
+    //    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.95,1.15);
+    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.90,1.20);
     //
     if (l1 && !l2l3 && !res) hpt->GetXaxis()->SetRangeUser(10,1999);
     if (!l1 && l2l3 && !res) hpt->GetXaxis()->SetRangeUser(10,1999);
     //if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(10,1999);
     //if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(10,3500);
-    if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(50,3500);
+    if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(25,5400);
   }
 
   //lumi_7TeV  = (dothree ? "36 pb^{-1} + 4.9 fb^{-1}" : "4.9 fb^{-1}");
   //lumi_13TeV  = "19.8 fb^{-1} (8 TeV) + 1.3--2.1 fb^{-1}";
   //  lumi_13TeV  = "27 fb^{-1} (13 TeV)";
-  lumi_13TeV  = "36 fb^{-1} (13 TeV)";
+  lumi_13TeV  = (_mc ? "MC" : "36 fb^{-1} (13 TeV)");
+  //  lumi_13TeV  = "MC";
 
   TH1D *h1a = (TH1D*)h->Clone(Form("h1a_%s",a));
   TCanvas *c1a = tdrCanvas(Form("c1a_%s",a),h1a,4,11,kSquare);
@@ -422,6 +439,7 @@ void compareJECversions(string algo="AK4PFchs",
 
   TCanvas *c1d = tdrCanvas(Form("c1d_%s",a),hpt,4,11,kSquare);
   TCanvas *c1d25 = tdrCanvas(Form("c1d25_%s",a),hpt,4,11,kSquare);
+  TCanvas *c1d40 = tdrCanvas(Form("c1d40_%s",a),hpt,4,11,kSquare);
   if (_paper) hpt->SetTitleOffset(0.97); // comma otherwise cut off
 
   TGraph *g1a = new TGraph(0);
@@ -429,6 +447,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g1c = new TGraph(0);
   TGraph *g1d = new TGraph(0);
   TGraph *g1d25 = new TGraph(0);
+  TGraph *g1d40 = new TGraph(0);
   TGraph *g1e = new TGraph(0);
   //
   TGraph *g2a = new TGraph(0);
@@ -436,6 +455,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g2c = new TGraph(0);
   TGraph *g2d = new TGraph(0);
   TGraph *g2d25 = new TGraph(0);
+  TGraph *g2d40 = new TGraph(0);
   TGraph *g2e = new TGraph(0);
   //
   TGraph *g3a = new TGraph(0);
@@ -443,6 +463,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g3c = new TGraph(0);
   TGraph *g3d = new TGraph(0);
   TGraph *g3d25 = new TGraph(0);
+  TGraph *g3d40 = new TGraph(0);
   TGraph *g3e = new TGraph(0);
   //
   TGraph *g21a = new TGraph(0);
@@ -455,6 +476,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g1c_e = new TGraphErrors(0);
   TGraphErrors *g1d_e = new TGraphErrors(0);
   TGraphErrors *g1d25_e = new TGraphErrors(0);
+  TGraphErrors *g1d40_e = new TGraphErrors(0);
   TGraphErrors *g1e_e = new TGraphErrors(0);
   TGraph *g1a_pl = new TGraph(0);
   TGraph *g1a_mn = new TGraph(0);
@@ -466,6 +488,8 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g1d_mn = new TGraph(0);
   TGraph *g1d25_pl = new TGraph(0);
   TGraph *g1d25_mn = new TGraph(0);
+  TGraph *g1d40_pl = new TGraph(0);
+  TGraph *g1d40_mn = new TGraph(0);
   TGraph *g1e_pl = new TGraph(0);
   TGraph *g1e_mn = new TGraph(0);
 
@@ -474,6 +498,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g2c_e = new TGraphErrors(0);
   TGraphErrors *g2d_e = new TGraphErrors(0);
   TGraphErrors *g2d25_e = new TGraphErrors(0);
+  TGraphErrors *g2d40_e = new TGraphErrors(0);
   TGraphErrors *g2e_e = new TGraphErrors(0);
   TGraph *g2a_pl = new TGraph(0);
   TGraph *g2a_mn = new TGraph(0);
@@ -485,6 +510,8 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g2d_mn = new TGraph(0);
   TGraph *g2d25_pl = new TGraph(0);
   TGraph *g2d25_mn = new TGraph(0);
+  TGraph *g2d40_pl = new TGraph(0);
+  TGraph *g2d40_mn = new TGraph(0);
   TGraph *g2e_pl = new TGraph(0);
   TGraph *g2e_mn = new TGraph(0);
 
@@ -493,6 +520,7 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g3c_e = new TGraphErrors(0);
   TGraphErrors *g3d_e = new TGraphErrors(0);
   TGraphErrors *g3d25_e = new TGraphErrors(0);
+  TGraphErrors *g3d40_e = new TGraphErrors(0);
   TGraphErrors *g3e_e = new TGraphErrors(0);
   TGraph *g3a_pl = new TGraph(0);
   TGraph *g3a_mn = new TGraph(0);
@@ -504,6 +532,8 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g3d_mn = new TGraph(0);
   TGraph *g3d25_pl = new TGraph(0);
   TGraph *g3d25_mn = new TGraph(0);
+  TGraph *g3d40_pl = new TGraph(0);
+  TGraph *g3d40_mn = new TGraph(0);
   TGraph *g3e_pl = new TGraph(0);
   TGraph *g3e_mn = new TGraph(0);
 
@@ -568,7 +598,7 @@ void compareJECversions(string algo="AK4PFchs",
 	  // std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
 	  double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
 			    + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	  // std::cout<<"Point #"<<g21->GetN()<<" eta, R = "<<eta<<", "<<y2/y1<<std::endl;
+	  //	  std::cout<<"Point #"<<g21->GetN()<<" eta, R = "<<eta<<", "<<y2/y1<<std::endl;
 	  g21->SetPoint(g21->GetN(), eta, y2/y1);
 	} // energy < 6500
       } // for j
@@ -608,6 +638,7 @@ void compareJECversions(string algo="AK4PFchs",
 	g2a->SetPoint(g2a->GetN(), eta, y2);
 	g3a->SetPoint(g3a->GetN(), eta, y3);
 	g21a->SetPoint(g21a->GetN(),eta, y2/y1);
+	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
 	//
 	g1a_pl->SetPoint(g1a_pl->GetN(), eta, y1*(1+e1));
 	g1a_mn->SetPoint(g1a_mn->GetN(), eta, y1*(1-e1));
@@ -660,6 +691,7 @@ void compareJECversions(string algo="AK4PFchs",
 	g2b->SetPoint(g2b->GetN(), eta, y2);
 	g3b->SetPoint(g3b->GetN(), eta, y3);
 	g21b->SetPoint(g21b->GetN(),eta, y2/y1);
+	//	std::cout<<"g21b->GetN() = "<<g21b->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
 	//
 	g1b_pl->SetPoint(g1b_pl->GetN(), eta, y1*(1+e1));
 	g1b_mn->SetPoint(g1b_mn->GetN(), eta, y1*(1-e1));
@@ -712,6 +744,7 @@ void compareJECversions(string algo="AK4PFchs",
 	g2c->SetPoint(g2c->GetN(), eta, y2);
 	g3c->SetPoint(g3c->GetN(), eta, y3);
 	g21c->SetPoint(g21c->GetN(),eta, y2/y1);
+	//	std::cout<<"g21c->GetN() = "<<g21c->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
 	//
 	g1c_pl->SetPoint(g1c_pl->GetN(), eta, y1*(1+e1));
 	g1c_mn->SetPoint(g1c_mn->GetN(), eta, y1*(1-e1));
@@ -888,6 +921,60 @@ void compareJECversions(string algo="AK4PFchs",
 	g3d25_e->SetPointError(i-1, 0., y3*e3);
       }
     } // *** Eta = 2.5
+
+    // ***** Eta = 4.0
+    {
+      double eta = 4.0;
+      double pt = hpt->GetBinCenter(i);
+      double energy = pt*cosh(eta);
+      
+      if (pt>10 && energy < 6500.) {
+	// Asymmetric corrections now
+	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
+	double y3(0);
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
+	// negative side
+	if (_usenegative) {
+	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
+	}
+	// positive side
+	if (_usepositive) {
+	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
+	}
+	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
+	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
+	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
+	
+	g1d40->SetPoint(g1d40->GetN(), pt, y1);
+	g2d40->SetPoint(g2d40->GetN(), pt, y2);
+	g3d40->SetPoint(g3d40->GetN(), pt, y3);
+	//
+	g1d40_pl->SetPoint(g1d40_pl->GetN(), pt, y1*(1+e1));
+	g1d40_mn->SetPoint(g1d40_mn->GetN(), pt, y1*(1-e1));
+	g1d40_e->SetPoint(i-1, pt, y1);
+	g1d40_e->SetPointError(i-1, 0., y1*e1);
+	//
+	g2d40_pl->SetPoint(g2d40_pl->GetN(), pt, y2*(1+e2));
+	g2d40_mn->SetPoint(g2d40_mn->GetN(), pt, y2*(1-e2));
+	g2d40_e->SetPoint(i-1, pt, y2);
+	g2d40_e->SetPointError(i-1, 0., y2*e2);
+	//
+	g3d40_pl->SetPoint(g3d40_pl->GetN(), pt, y3*(1+e3));
+	g3d40_mn->SetPoint(g3d40_mn->GetN(), pt, y3*(1-e3));
+	g3d40_e->SetPoint(i-1, pt, y3);
+	g3d40_e->SetPointError(i-1, 0., y3*e3);
+      }
+    } // *** Eta = 4.0
+
+
   } // for i
 
   // Generic legend
@@ -911,6 +998,8 @@ void compareJECversions(string algo="AK4PFchs",
   g3d->SetFillColor(kGreen+2);
   g3d25->SetFillStyle(3003);
   g3d25->SetFillColor(kGreen+2);
+  g3d40->SetFillStyle(3003);
+  g3d40->SetFillColor(kGreen+2);
   g3e->SetFillStyle(3003);
   g3e->SetFillColor(kGreen+2);
 
@@ -924,6 +1013,8 @@ void compareJECversions(string algo="AK4PFchs",
   g1d->SetFillColor(kBlue);
   g1d25->SetFillStyle(3003);
   g1d25->SetFillColor(kBlue);
+  g1d40->SetFillStyle(3003);
+  g1d40->SetFillColor(kBlue);
   g1e->SetFillStyle(3003);
   g1e->SetFillColor(kBlue);
 
@@ -937,6 +1028,8 @@ void compareJECversions(string algo="AK4PFchs",
   g2d->SetFillColor(kRed);
   g2d25->SetFillStyle(3003);
   g2d25->SetFillColor(kRed);
+  g2d40->SetFillStyle(3003);
+  g2d40->SetFillColor(kRed);
   g2e->SetFillStyle(3003);
   g2e->SetFillColor(kRed);
   
@@ -957,7 +1050,7 @@ void compareJECversions(string algo="AK4PFchs",
   // ***** Pt = 30
   {
     c1a->cd();
-    //h->DrawClone("AXIS");
+    //    h->DrawClone("AXIS");
 
     if (dothree) {
       g3a_e->SetFillStyle(3003);
@@ -1394,7 +1487,78 @@ void compareJECversions(string algo="AK4PFchs",
     if (dothree) leg1d25->AddEntry(g3d,s3,"LPF");
 
     gPad->RedrawAxis();
-  }
+  }//** Eta 2.5
+
+// ***** Eta = 4.0
+  {
+    c1d40->cd();
+    c1d40->SetLogx();
+    
+    if (dothree) {
+      g3d40_e->SetFillStyle(3003);
+      g3d40_e->SetFillColor(kGreen+2);
+      g3d40_e->Draw("SAME E3");
+      g3d40_pl->SetLineColor(kGreen-9);
+      g3d40_pl->SetLineStyle(kSolid);
+      g3d40_pl->Draw("SAMEL");
+      g3d40_mn->SetLineColor(kGreen-9);
+      g3d40_mn->SetLineStyle(kSolid);
+      g3d40_mn->Draw("SAMEL");
+    }
+
+    g1d40_e->SetFillStyle(3003);
+    g1d40_e->SetFillColor(kBlue);
+    g1d40_e->Draw("SAME E3");
+    g1d40_pl->SetLineColor(kBlue-9);
+    g1d40_pl->SetLineStyle(kSolid);
+    g1d40_pl->Draw("SAMEL");
+    g1d40_mn->SetLineColor(kBlue-9);
+    g1d40_mn->SetLineStyle(kSolid);
+    g1d40_mn->Draw("SAMEL");
+
+    g2d40_e->SetFillStyle(3003);
+    g2d40_e->SetFillColor(kRed);
+    g2d40_e->Draw("SAME E3");
+    g2d40_pl->SetLineColor(kRed-9);
+    g2d40_pl->SetLineStyle(kSolid);
+    g2d40_pl->Draw("SAMEL");
+    g2d40_mn->SetLineColor(kRed-9);
+    g2d40_mn->SetLineStyle(kSolid);
+    g2d40_mn->Draw("SAMEL");
+        
+    if (dothree) {
+      g3d40->SetMarkerStyle(kOpenSquare);
+      g3d40->SetMarkerColor(kGreen+2);
+      g3d40->SetLineColor(kGreen+2);
+      g3d40->Draw("SAMEPL");
+    }
+
+    g1d40->SetMarkerStyle(kFullSquare);
+    g1d40->SetMarkerColor(kBlue);
+    g1d40->SetLineColor(kBlue);
+    g1d40->Draw("SAMEPL");
+
+    g2d40->SetMarkerStyle(kFullCircle);
+    g2d40->SetMarkerColor(kRed);
+    g2d40->SetLineColor(kRed);
+    g2d40->Draw("SAMEPL");
+
+    tex->DrawLatex(0.19,0.75,"|#eta| = 4.0");
+    if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
+
+    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
+    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
+    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
+    TLegend *leg1d40 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1d40->SetTextSize(0.03);
+    leg1d40->SetHeader(texmap[a]);
+    leg1d40->AddEntry(g2d,s2,"LPF");
+    leg1d40->AddEntry(g1d,s1,"LPF");
+    if (dothree) leg1d40->AddEntry(g3d,s3,"LPF");
+
+    gPad->RedrawAxis();
+  }//** Eta 4.0
+
 
   string ctype = string(cl1)+string(cl2l3)+string(cplus)+string(cres);
   const char *cs = ctype.c_str();
@@ -1404,6 +1568,7 @@ void compareJECversions(string algo="AK4PFchs",
     c1c->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Pt1000.pdf",a,cm,cs));
     c1d->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta00.pdf",a,cm,cs));
     c1d25->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta25.pdf",a,cm,cs));
+    c1d40->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta40.pdf",a,cm,cs));
     c1e->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Q1000.pdf",a,cm,cs));
   }
   if (_C) {
@@ -1412,6 +1577,7 @@ void compareJECversions(string algo="AK4PFchs",
     c1c->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Pt1000.C",a,cm,cs));
     c1d->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta00.C",a,cm,cs));
     c1d25->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta25.C",a,cm,cs));
+    c1d40->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta40.C",a,cm,cs));
     c1e->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Q1000.C",a,cm,cs));
   }
 
@@ -1419,12 +1585,15 @@ void compareJECversions(string algo="AK4PFchs",
   {
     int colors[] = {kBlack, kBlue, kCyan+2, kGreen+2, kOrange+2, kRed};
     int styles[] = {kSolid, kDashed, kDotted, kDashDotted, kDashed, kSolid};
-    c0->cd();
+
+    //c0->cd();
     h->SetMinimum(0.85);//0.90);
     h->SetMaximum(1.25);//1.20);
     TH1D *h0 = (TH1D*)h->DrawClone("AXIS");
-    h0->GetYaxis()->SetTitle(Form("%s%s%s%s (%s / %s)",cl1,cl2l3,cpl,cres,
-				  s2s, s1s));
+    h0->GetYaxis()->SetTitle(Form("%s%s%s%s (%s / %s)",cl1,cl2l3,cpl,cres, s2s, s1s));
+    //h->GetYaxis()->SetTitle(Form("%s%s%s%s (%s / %s)",cl1,cl2l3,cpl,cres, s2s, s1s));
+    TCanvas *c0 = tdrCanvas(Form("c0_%s",a),h0,4,11,kSquare);    
+    c0->cd();
 
     TLine *l = new TLine();
     l->SetLineStyle(kDashed);
@@ -1441,10 +1610,12 @@ void compareJECversions(string algo="AK4PFchs",
     leg->Draw();
 
     for (int i = 0; i != npt; ++i) {
+    // for (int i = 0; i <1 ; ++i) {
       TGraphErrors *gr = g21s[i];
       gr->SetLineColor(colors[i]);//i+1);
       gr->SetLineStyle(styles[i]);//i+1);
       gr->SetLineWidth(3);
+      //      gr->Print();
       gr->Draw("SAME L");
 
       //leg->AddEntry(gr,Form("%s / %s (p_{T,%s}=%1.0f GeV)",
@@ -1454,15 +1625,17 @@ void compareJECversions(string algo="AK4PFchs",
     } // for i
     tex->DrawLatex(0.70,0.85,a);
     //cmsPrel(_lumi);
+    c0->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_%sover%s.pdf",a,cm,cs,s2s,s1s));
   }
-  c0->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_%sover%s.pdf",a,cm,cs,s2s,s1s));
+
 
   
   {// Ratio plots
+    TCanvas *c2 = tdrCanvas(Form("c2_%s",a),h,4,11,kSquare);    
     c2->cd();
 
-    h->SetMinimum(l1||l2l3 ? 0.80 : 0.95);
-    h->SetMaximum(l1||l2l3 ? 1.20 : 1.12);
+    //h->SetMinimum(l1||l2l3 ? 0.80 : 0.95);
+    //h->SetMaximum(l1||l2l3 ? 1.20 : 1.12);
     if (res && (algo=="CALO" || algo=="JPT")) h->SetMinimum(0.80);
     h->DrawClone("AXIS");
 
@@ -1484,6 +1657,7 @@ void compareJECversions(string algo="AK4PFchs",
     g21a->SetLineStyle(kDashed);
     g21a->SetLineWidth(3);
     g21a->Draw("SAMEL");
+    //    g21a->Draw("L");
 
     g21c->SetMarkerStyle(kOpenSquare);
     g21c->SetMarkerColor(kRed);

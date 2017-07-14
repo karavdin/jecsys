@@ -13,9 +13,13 @@
   // Test Run2015D V3M2 L2L3Res
   //compareJECversions("AK4PFchs",false,false,true); // Fig.24topleft
 
-  //compareJECversions("AK4PFchs",true,false,false,"MC"); // L1
+  //  compareJECversions("AK4PFchs",true,false,false,"MC"); // L1
+  //  compareJECversions("AK4PFchs",true,false,false,"DATA"); // L1
   //compareJECversions("AK4PFchs",false,true,false,"DATA"); // L2L3
+  //  compareJECversions("AK4PFchs",true,true,false,"DATA"); // L1L2L3
+  //  compareJECversions("AK4PFchs",true,true,false,"MC"); // L1L2L3
   compareJECversions("AK4PFchs",false,false,true,"DATA"); // Res
+  //compareJECversions("AK4PFchs",true,true,true,"DATA"); // L1L2L3+Res
 
   // Patch for pas-v6
   //compareJECversions("AK5PF",true,false,false); // Fig.9left(top)
