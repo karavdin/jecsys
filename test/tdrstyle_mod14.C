@@ -204,6 +204,7 @@ void setTDRStyle() {
   tdrStyle->SetStripDecimals(kTRUE);
   tdrStyle->SetTickLength(0.03, "XYZ");
   tdrStyle->SetNdivisions(510, "XYZ");
+  //  tdrStyle->SetNdivisions(550, "XYZ");
   tdrStyle->SetPadTickX(1);  // To get tick marks on the opposite side of the frame
   tdrStyle->SetPadTickY(1);
 
@@ -618,7 +619,8 @@ TCanvas* tdrDiCanvas(const char* canvName, TH1D *hup, TH1D *hdw,
   hdw->SetTickLength(hdw->GetTickLength("X") * H_ref / Hdw, "X");
 
   // Reduce divisions to match smaller height (default n=510, optim=kTRUE)
-  hdw->GetYaxis()->SetNdivisions(504);
+  //  hdw->GetYaxis()->SetNdivisions(504);
+  //  hdw->GetYaxis()->SetNdivisions(500);
 
   hdw->Draw("AXIS");
 
