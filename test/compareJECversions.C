@@ -21,16 +21,19 @@
 
 // symmetric if both below false
 // positive true overrides negative
+//bool _usenegative = true;
 bool _usenegative = false;
 bool _usepositive = false;
+//bool _usepositive = true;
 
 bool _useptgen = true; // iterate to produce JEC vs pTgen
-bool _dothree  = true; // compare three JECs instead of just two
-//bool _dothree  = false; // compare two JECs
+//bool _dothree  = true; // compare three JECs instead of just two
+bool _dothree  = false; // compare two JECs
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
 //const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
-const double _mu = 23.1; // 2016RunH
+//const double _mu = 23.1; // 2016RunH
+const double _mu = 32.8; // 2018 RunAB
 //const double _mu = 10.0; // TEST
 //const double _mu = 19.1; // 2016RunEF
 //const double _lumi = 19800.;
@@ -184,120 +187,139 @@ void compareJECversions(string algo="AK4PFchs",
  //  const char *s1 = "Fall15_25nsV2";// (13 TeV)";
  //  const char *s1s = "Fall15_25nsV2";
 
-  // // //2017 "17Nov" JEC
-  // string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017F_V8_DATA");
-  // const char *cid3 = sid3.c_str();
-  // const char *a3 = a;
-  // const char *s3 = "Fall17_17Nov2017F_V8";// (13 TeV)";
-  // const char *s3s = "17NovV8";
 
-  // string sid1 = (_mc ? "Fall17_17Nov2017_V3_MC" : "Fall17_17Nov2017F_V6_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // const char *s1 = "Fall17_17Nov2017F_V6";// (13 TeV)";
-  // const char *s1s = "17NovV6";
 
-  // string sid2 = (_mc ? "Fall17_17Nov2017_V3_MC" : "Fall17_17Nov2017F_V8d_DATA");
-  // const char *cid2 = sid2.c_str();
-  // const char *a2 = a;
-  // const char *s2 = "Fall17_17Nov2017F_V8d";// (13 TeV)";
-  // const char *s2s = "17NovV8d";
-
-  // // // //2016 legacy JEC
-  string sid2 = (_mc ? "Summer16_07Aug2017_V7b_MC" : "Summer16_07Aug2017BCD_V10_DATA");
-  const char *cid2 = sid2.c_str();
-  const char *a2 = a;
-  // const char *s2 = "Summer16_07Aug2017_V7b";
-  // const char *s2s = "07AugV7b";
-  const char *s2 = "Summer16_07Aug2017BCD_V10";
-  const char *s2s = "07AugV10";
-
- //  string sid1 = (_mc ? "Summer16_07Aug2017_V7_MC" : "Summer16_07Aug2017BCD_V7_DATA");
- //  const char *cid1 = sid1.c_str();
- //  const char *a1 = a;
- // const char *s1 = "Summer16_07Aug2017_V7";// (13 TeV)";
- //  const char *s1s = "07AugV7";
- //  // const char *s1 = "Summer16_07Aug2017BCD_V7";// (13 TeV)";
- //  // const char *s1s = "07AugV7";
-
-  string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_03Feb2017BCD_V9_DATA");
+  // // // // //2017 "17Nov" JEC
+  string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
   const char *cid3 = sid3.c_str();
   const char *a3 = a;
-  // const char *s3 = "Summer16_23Sep2016V4_MC";// (13 TeV)";
-  // const char *s3s = "23SepV4";
-  const char *s3 = "Summer16_03Feb2017BCD_V9";// (13 TeV)";
-  const char *s3s = "03FebV9";
+  const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
+  const char *s3s = "17NovV8";
 
-  string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Summer16_23Sep2016BCDV4_DATA");
+  // string sid1 = (_mc ? "Fall17_17Nov2017_V3_MC" : "Fall17_17Nov2017B_V6_DATA");
+  // const char *cid1 = sid1.c_str();
+  // const char *a1 = a;
+  // const char *s1 = "Fall17_17Nov2017B_V6";// (13 TeV)";
+  // const char *s1s = "17NovV6";
+
+  string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
   const char *cid1 = sid1.c_str();
   const char *a1 = a;
-  const char *s1 = "Summer16_23Sep2016BCD4";// (13 TeV)";
-  const char *s1s = "23Sep2016BCDV4";
+  // const char *s1 = "Summer18_V1";// (13 TeV)";
+  // const char *s1s = "Summer18V1";
+
+  const char *s1 = "Fall17_17Nov2017B_V11";// (13 TeV)";
+  const char *s1s = "17NovV11";
+
+  string sid2 = (_mc ? "Fall17_17Nov2017_V20_MC" : "Fall17_17Nov2017B_V12_DATA");
+  const char *cid2 = sid2.c_str();
+  const char *a2 = a;
+  const char *s2 = "Fall17_17Nov2017B_V12";// (13 TeV)";
+  const char *s2s = "17NovV12";
+
+
+
+// //  //  // // // //2016 legacy JEC
+//   string sid2 = (_mc ? "Summer16_07Aug2017_V11_MC" : "Summer16_07Aug2017GH_V12_DATA");
+//   const char *cid2 = sid2.c_str();
+//   const char *a2 = a;
+//   const char *s2 = "Summer16_07Aug2017_V12";
+//   const char *s2s = "07AugV12";
+
+//   string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_07Aug2017GH_V11_DATA");
+//   const char *cid1 = sid1.c_str();
+//   const char *a1 = a;
+//   const char *s1 = "Summer16_07Aug2017_V11";// (13 TeV)";
+//   const char *s1s = "07AugV11";
+
+//   string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
+//   const char *cid3 = sid3.c_str();
+//   const char *a3 = a;
+//   const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
+//   const char *s3s = "17NovV8";
+
+//   // const char *s3 = "Summer16_03Feb2017H_V9";// (13 TeV)";
+//   // const char *s3s = "03FebV9";
+
+// //   string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Summer16_23Sep2016HV4_DATA");
+// //   const char *cid1 = sid1.c_str();
+// //   const char *a1 = a;
+// //   // const char *s1 = "Summer16_23Sep2016H4";// (13 TeV)";
+// //   // const char *s1s = "23Sep2016HV4";
+
+// //   const char *s1 = "Summer16_07Aug2017_V3";// (13 TeV)";
+// //   const char *s1s = "07AugV3";
+
+// // //   string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Spring16_25nsV6_DATA");
+// // //   const char *cid1 = sid1.c_str();
+// // //   const char *a1 = a;
+// // //   const char *s1 = "Spring16_25nsV6";// (13 TeV)";
+// // //   const char *s1s = "Spring16_25nsV6";
 
  
 
-  // string sid2 = (_mc ? "Summer16_07Aug2017_V5_MC" : "Summer16_07Aug2017BCD_V5_DATA");
-  // const char *cid2 = sid2.c_str();
-  // const char *a2 = a;
-  // const char *s2 = "Summer16_07Aug2017BCD_V5";
-  // const char *s2s = "07AugV5";
+// //   // string sid2 = (_mc ? "Summer16_07Aug2017_V5_MC" : "Summer16_07Aug2017BCD_V5_DATA");
+// //   // const char *cid2 = sid2.c_str();
+// //   // const char *a2 = a;
+// //   // const char *s2 = "Summer16_07Aug2017BCD_V5";
+// //   // const char *s2s = "07AugV5";
 
 
 
- // string sid2 = (_mc ? "Fall17_17Nov2017_V8_MC" : "Summer16_07Aug2017GH_V5_DATA");
- //  const char *cid2 = sid2.c_str();
- //  const char *a2 = a;
- //  //  const char *s2 = "Summer16_07Aug2017GH_V5";// (13 TeV)";
- //  //  const char *s2s = "07AugV5";
- //  const char *s2 = "Fall17_17Nov2017_V8_MC";// (13 TeV)";
- //  const char *s2s = "17NovV8";
+// //  // string sid2 = (_mc ? "Fall17_17Nov2017_V8_MC" : "Summer16_07Aug2017GH_V5_DATA");
+// //  //  const char *cid2 = sid2.c_str();
+// //  //  const char *a2 = a;
+// //  //  //  const char *s2 = "Summer16_07Aug2017GH_V5";// (13 TeV)";
+// //  //  //  const char *s2s = "07AugV5";
+// //  //  const char *s2 = "Fall17_17Nov2017_V8_MC";// (13 TeV)";
+// //  //  const char *s2s = "17NovV8";
 
   
 
-  // // 2016 JEC, 80X
-  // string sid1 = (_mc ? "Summer16_03Feb2017_V9_MC" : "Summer16_03Feb2017H_V9_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // const char *s1 = "Summer16_03Feb2017H_V9";// (13 TeV)";
-  // const char *s1s = "03FebV9";
+//   // // 2016 JEC, 80X
+//   // string sid1 = (_mc ? "Summer16_03Feb2017_V9_MC" : "Summer16_03Feb2017H_V9_DATA");
+//   // const char *cid1 = sid1.c_str();
+//   // const char *a1 = a;
+//   // const char *s1 = "Summer16_03Feb2017H_V9";// (13 TeV)";
+//   // const char *s1s = "03FebV9";
 
-  // //2016 JEC, previous itteration
-  // string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Summer16_07Aug2017GH_V3_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // const char *s1 = "Summer16_07Aug2017GH_V3";// (13 TeV)";
-  // const char *s1s = "07AugV3";
+//   // //2016 JEC, previous itteration
+//   // string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Summer16_07Aug2017GH_V3_DATA");
+//   // const char *cid1 = sid1.c_str();
+//   // const char *a1 = a;
+//   // const char *s1 = "Summer16_07Aug2017GH_V3";// (13 TeV)";
+//   // const char *s1s = "07AugV3";
 
  
 
-  // string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_07Aug2017GH_V6_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // //  const char *s1 = "Summer16_07Aug2017GH_V6";// (13 TeV)";
-  // //  const char *s1s = "07AugV6";
-  // const char *s1 = "Summer16_23Sep2016V4";// (13 TeV)";
-  // const char *s1s = "23SepV4";
+//   // string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_07Aug2017GH_V6_DATA");
+//   // const char *cid1 = sid1.c_str();
+//   // const char *a1 = a;
+//   // //  const char *s1 = "Summer16_07Aug2017GH_V6";// (13 TeV)";
+//   // //  const char *s1s = "07AugV6";
+//   // const char *s1 = "Summer16_23Sep2016V4";// (13 TeV)";
+//   // const char *s1s = "23SepV4";
 
-  // // // 2016 JEC, 80X
-  // string sid1 = (_mc ? "Spring16_23Sep2016V2_MC" : "Summer16_03Feb2017H_V9_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // const char *s1 = "Summer16_03Feb2017H_V9";// (13 TeV)";
-  // const char *s1s = "03Feb";
+//   // // // 2016 JEC, 80X
+//   // string sid1 = (_mc ? "Spring16_23Sep2016V2_MC" : "Summer16_03Feb2017H_V9_DATA");
+//   // const char *cid1 = sid1.c_str();
+//   // const char *a1 = a;
+//   // const char *s1 = "Summer16_03Feb2017H_V9";// (13 TeV)";
+//   // const char *s1s = "03Feb";
 
-// // 2016 80X JEC, Moriond
-//   string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Fall17_17Nov2017B_V7_DATA");
-//   const char *cid3 = sid3.c_str();
-//   const char *a3 = a;
-//   const char *s3 = "Fall17_17Nov2017B_V7";// (13 TeV)";
-//   const char *s3s = "17NovV7";
+// // // 2016 80X JEC, Moriond
+// //   string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Fall17_17Nov2017B_V7_DATA");
+// //   const char *cid3 = sid3.c_str();
+// //   const char *a3 = a;
+// //   const char *s3 = "Fall17_17Nov2017B_V7";// (13 TeV)";
+// //   const char *s3s = "17NovV7";
 
-  // // 2016 80X JEC, Moriond
-  // string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_23Sep2016HV4_DATA");
-  // const char *cid3 = sid3.c_str();
-  // const char *a3 = a;
-  // const char *s3 = "Summer16_23Sep2016H_V4";// (13 TeV)";
-  // const char *s3s = "23SepV4";
+//   // // 2016 80X JEC, Moriond
+//   // string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_23Sep2016HV4_DATA");
+//   // const char *cid3 = sid3.c_str();
+//   // const char *a3 = a;
+//   // const char *s3 = "Summer16_23Sep2016H_V4";// (13 TeV)";
+//   // const char *s3s = "23SepV4";
 
 
 
@@ -310,6 +332,7 @@ void compareJECversions(string algo="AK4PFchs",
   str=Form("CondFormats/JetMETObjects/data/%s_L3Absolute_%s.txt",cid1,a1);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1L3 = new JetCorrectorParameters(str);
+
   str=Form("CondFormats/JetMETObjects/data/%s_L2L3Residual_%s.txt",cid1,a1);
   if (!mc) cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1 = (mc ? 0 : new JetCorrectorParameters(str));
@@ -325,6 +348,7 @@ void compareJECversions(string algo="AK4PFchs",
   JetCorrectorParameters *JetCorPar2L2 = new JetCorrectorParameters(str);
   str=Form("CondFormats/JetMETObjects/data/%s_L3Absolute_%s.txt",cid2,a2);
   cout << str << endl << flush;
+
   //Comment L2L3Res to TEST MC vs DATA 
   JetCorrectorParameters *JetCorPar2L3 = new JetCorrectorParameters(str);
   str=Form("CondFormats/JetMETObjects/data/%s_L2L3Residual_%s.txt",cid2,a2);
@@ -348,6 +372,8 @@ void compareJECversions(string algo="AK4PFchs",
   if (l2l3){
     vParam1.push_back(*JetCorPar1L2);
     cout<<"push back JetCorPar1L2"<<endl;
+    vParam1.push_back(*JetCorPar1L3);
+    cout<<"push back JetCorPar1L3"<<endl;
   }
   /* //TEST MC vs DATA   if (l2l3) vParam1.push_back(*JetCorPar1L3); */
   if (res && !mc && JetCorPar1)  vParam1.push_back(*JetCorPar1);
@@ -366,6 +392,8 @@ void compareJECversions(string algo="AK4PFchs",
   if (l2l3){
     vParam2.push_back(*JetCorPar2L2);
     cout<<"push back JetCorPar2L2"<<endl;
+    vParam2.push_back(*JetCorPar2L3);
+    cout<<"push back JetCorPar2L3"<<endl;
   }
   /* //TEST MC vs DATA   if (l2l3) vParam2.push_back(*JetCorPar2L3); */
   if (res && !mc && JetCorPar2)  vParam2.push_back(*JetCorPar2);
@@ -444,13 +472,22 @@ void compareJECversions(string algo="AK4PFchs",
   const char *cl1rc = (l1rc ? "L1RC" : "");
   
   // Create suitable binning
-  const double x_pt[] =
-    {2, 3, 5, 6, 7, 8, 10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
-     97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
-     507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
-     //_paper ? 1999. : 1890.,
-     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4200,4400, 4600, 4800, 5000, 5200, 5400};
-     //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
+ //  //test for very high pt
+ // const double x_pt[] =
+ //    {430,
+ //     507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
+ //     //_paper ? 1999. : 1890.,
+ //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4200,4400, 4600, 4800, 5000, 5200, 5400, 7000, 8000};
+ //     //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
+
+ //normal PU
+  // const double x_pt[] =
+  //   {2, 3, 5, 6, 7, 8, 10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
+  //    97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
+  //    507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
+  //    //_paper ? 1999. : 1890.,
+  //    2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4200,4400, 4600, 4800, 5000, 5200, 5400};
+  //    //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
 
   // //low PU
   // const double x_pt[] =
@@ -458,13 +495,13 @@ void compareJECversions(string algo="AK4PFchs",
   //    97, 114, 133, 153, 174, 196, 220, 245, 272, 300};
 
   //normal PU
-  // const double x_pt[] =
-  //   {10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
-  //    97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
-  //    507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
-  //    //_paper ? 1999. : 1890.,
-  //    2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4500, 5000};
-  //    //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
+  const double x_pt[] =
+    {10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
+     97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
+     507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
+     //_paper ? 1999. : 1890.,
+     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4500, 5000};
+     //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
 
 
 
@@ -492,56 +529,32 @@ void compareJECversions(string algo="AK4PFchs",
   h->SetMaximum(2.0);
   if (_paper) {
     if (l1rc && !l1 && !l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.70,1.10);
-    //    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.6,2.6);
-    //    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.85,1.75);
-    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.75,1.35);
-    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.70,1.10);
-    //    if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.6,1.6);//AK4 CHS
-    //    if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.3,2.0);//AK4 CHS
-    //    if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.7,2.5);//AK4 PUPPI
-    //    if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.7,1.3);
-    //    if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.6,1.6); //for CHS
-    //    if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.95,1.1); //for CHS
-    //    if (!l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.85,1.6); //for CHS
-    // if (l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.4); //for PUPPI
-    // if (!l1 &&  l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,3.4); //for PUPPI
-    //    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.85,1.6);
-    //    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.3,2.00);
-    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.90,1.30);
-    //    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.90,1.20);
-    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.30);
+    //    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.8,1.7);
+    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.4,1.2); //PUPPI, AK8 PF
+    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
+    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.5,1.4); //AK8 PF CHS
+    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.40,1.10);
+    //    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.90,1.30);
+    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.85,1.35);
+    //    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,1.70);
+    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.50); //AK4 PUPPI
     //
     if (l1rc && !l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.70,1.10);
-    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.70,1.10);
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.6,1.6);//CHS
-    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.30);//CHS
-    //if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.7,1.3);//CHS
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.95,1.1);//CHS
-    //    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.6,1.6);//CHS
-    //if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.4);//PUPPI
-    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.3,2.0);//PUPPI
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.7,2.5);//PUPPI
-    // if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,3.4);//PUPPI
-    //    if (l1 && l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.6,2.60);
-    if (l1 && l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.75,1.35);
+    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.4,1.10);
+    //    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,1.70);//CHS
+    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.50);//PUPPI
+    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.7,1.2);// AK8 PF
+    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);//PUPPI
+    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.5,1.4);// AK8 PF CHS
+    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);// PUPPI
+    if (l1 && l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.8,1.7);
 
-    //if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.85,1.45);
-    //if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.80,1.20);
-    //if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.96,1.06);
-    //    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.95,1.15);
-    //    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.3,2.00);
     if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.9,1.30);
-    //    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.95,1.10);
-    //
-    //    if (l1 && !l2l3 && !res) hpt->GetXaxis()->SetRangeUser(10,1999);
-    //    if (!l1 && l2l3 && !res) hpt->GetXaxis()->SetRangeUser(10,1999);
-    //if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(10,1999);
-    //if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(10,3500);
     if (l1 &&  l2l3 && !res) hpt->GetXaxis()->SetRangeUser(1,7999);
     if (l1 && !l2l3 && !res) hpt->GetXaxis()->SetRangeUser(1,7999);
     if (!l1 && l2l3 && !res) hpt->GetXaxis()->SetRangeUser(1,7999);
     if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(1,7999);
-    //    if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(25,5400);
+
   }
 
   //lumi_7TeV  = (dothree ? "36 pb^{-1} + 4.9 fb^{-1}" : "4.9 fb^{-1}");
@@ -1680,6 +1693,8 @@ void compareJECversions(string algo="AK4PFchs",
   texmap["AK4PFchs"] = "R = 0.4, PF+CHS";
   texmap["AK8PF"] = "R = 0.8, PF";
   texmap["AK8PFchs"] = "R = 0.8, PF+CHS";
+  texmap["AK4PFPuppi"] = "R = 0.4, PF+PUPPI";
+  texmap["AK8PFPuppi"] = "R = 0.8, PF+PUPPI";
 
   // ***** Pt = 30
   {
