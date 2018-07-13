@@ -27,13 +27,15 @@ bool _usepositive = false;
 //bool _usepositive = true;
 
 bool _useptgen = true; // iterate to produce JEC vs pTgen
+//bool _useptgen = false; // DO NOT iterate to produce JEC vs pTgen
 //bool _dothree  = true; // compare three JECs instead of just two
 bool _dothree  = false; // compare two JECs
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
 //const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
 //const double _mu = 23.1; // 2016RunH
-const double _mu = 32.8; // 2018 RunAB
+//const double _mu = 32.8; // 2018 RunAB
+const double _mu = 0.0; // 2013
 //const double _mu = 10.0; // TEST
 //const double _mu = 19.1; // 2016RunEF
 //const double _lumi = 19800.;
@@ -50,15 +52,17 @@ string _alg("");
 // prhovstrpu->Fit(f1,"R")
 double getRho(double mu) {
 
-  double p[3] = {1.009, 0.5515, 0.0003597}; // DATA
-
+  //  double p[3] = {1.009, 0.5515, 0.0003597}; // DATA (2016?)
+  double p[3] = {-0.350, 0.599, -0.0011}; // DATA (2018A)
+  //  cout<<"rho = "<<p[0]+p[1]*mu+p[2]*mu*mu<<endl;
   return (p[0]+p[1]*mu+p[2]*mu*mu);
 
 }
 // pnpvvstrpu->Fit(f1,"R")
 double getNPV(double mu) {
 
-  double p[3] = {1.032, 0.7039, -0.001319}; // DATA
+  //  double p[3] = {1.032, 0.7039, -0.001319}; // DATA (2016?)
+  double p[3] = {0.369, 0.755, -0.0013}; // DATA (2018A)
 
   return (p[0]+p[1]*mu+p[2]*mu*mu);
 }
@@ -96,14 +100,17 @@ Double_t funcCorrPt(Double_t *x, Double_t *p) {
   double e = pt * cosh(eta);
   double mu = p[1];
   setEtaPtE(_thejec, eta, pt, e, mu);
-
-  return (_thejec->getCorrection() * pt);
+  double JEC = _thejec->getCorrection();
+  //  cout<<" _thejec->getCorrection() = "<<JEC<<" eta="<<eta<<" pt="<<pt<<" e="<<e<<" mu="<<mu<<endl;
+  return (JEC * pt);
 }
 
 double getEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
-		 int mu = _mu) {
+		 double mu = _mu) {
   // std::cout<<"getEtaPtE eta = "<<eta<<std::endl;
   setEtaPtE(jec, eta, pt, e, mu);
+  // if(pt>50 && pt<90)    
+  //   cout<<"pt = "<<pt<<" e = "<<e<<" mu = "<<mu<<" eta = "<<eta<<endl;
 
   // if using pTgen, need to iterate to solve ptreco
   if (_useptgen) {
@@ -113,12 +120,18 @@ double getEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
     fCorrPt->SetParameters(eta, mu);
     // Find ptreco that gives pTreco*JEC = pTgen
     double ptreco = fCorrPt->GetX(ptgen,1,6500);
+    e = ptreco * cosh(eta); //TEST
 
     setEtaPtE(jec, eta, ptreco, e, mu);
+    // if(ptgen>50 && ptgen<90)    
+    // cout<<"ptreco = "<<ptreco<<" ptgen = "<<ptgen<<" e = "<<e<<" mu = "<<mu<<" eta = "<<eta<<endl;
   }
   double JEC_val = jec->getCorrection();
-  //  std::cout<<"getEtaPtE JEC = "<<JEC_val<<std::endl;
-  //  std::cout<<"getEtaPtE eta in the end = "<<eta<<std::endl;
+  // //  if(JEC_val>2){
+  // if(fabs(eta)>2.8 && fabs(eta)<3.0 && JEC_val>2){
+  //  std::cout<<" !!!! getEtaPtE JEC = "<<JEC_val<<std::endl;
+  //  std::cout<<" !!!! getEtaPtE eta = "<<eta<<" pt = "<<pt<<" corr.pt = "<<pt/JEC_val<<" mu="<<mu<<std::endl;
+  // }
   return JEC_val;
 } // getEtaPtE
 
@@ -189,6 +202,28 @@ void compareJECversions(string algo="AK4PFchs",
 
 
 
+  // //2013 low PU
+
+  // string sid1 = (_mc ? "Winter14_V8_lowPU_MC" : "Winter14_V8_lowPU_DATA");
+  // const char *cid1 = sid1.c_str();
+  // const char *a1 = a;
+  // const char *s1 = "Winter14_V8_lowPU";
+  // const char *s1s = "Winter14_V8_lowPU";
+
+
+  // string sid2 = (_mc ? "Winter14_V8_MC" : "Winter14_V8_DATA");
+  // const char *cid2 = sid2.c_str();
+  // const char *a2 = a;
+  // const char *s2 = "Winter14_V8";// (13 TeV)";
+  // const char *s2s = "Winter14_V8";
+
+  // string sid3 = (_mc ? "Fall12_V5_MC" : "Fall12_V5_DATA");
+  // const char *cid3 = sid3.c_str();
+  // const char *a3 = a;
+  // const char *s3 = "Fall12_V5";// (13 TeV)";
+  // const char *s3s = "Fall12_V5";
+
+
   // // // // //2017 "17Nov" JEC
   string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
   const char *cid3 = sid3.c_str();
@@ -196,26 +231,28 @@ void compareJECversions(string algo="AK4PFchs",
   const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
   const char *s3s = "17NovV8";
 
-  // string sid1 = (_mc ? "Fall17_17Nov2017_V3_MC" : "Fall17_17Nov2017B_V6_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // const char *s1 = "Fall17_17Nov2017B_V6";// (13 TeV)";
-  // const char *s1s = "17NovV6";
-
-  string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
+  string sid1 = (_mc ? "Fall17_17Nov2017_V6_MC" : "Fall17_17Nov2017B_V6_DATA");
   const char *cid1 = sid1.c_str();
   const char *a1 = a;
+  const char *s1 = "Fall17_17Nov2017_V6";// (13 TeV)";
+  const char *s1s = "17NovV6";
+
+  // string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
+  // const char *cid1 = sid1.c_str();
+  // const char *a1 = a;
   // const char *s1 = "Summer18_V1";// (13 TeV)";
   // const char *s1s = "Summer18V1";
 
-  const char *s1 = "Fall17_17Nov2017B_V11";// (13 TeV)";
-  const char *s1s = "17NovV11";
+  // const char *s1 = "Fall17_17Nov2017B_V11";// (13 TeV)";
+  // const char *s1s = "17NovV11";
 
   string sid2 = (_mc ? "Fall17_17Nov2017_V20_MC" : "Fall17_17Nov2017B_V12_DATA");
   const char *cid2 = sid2.c_str();
   const char *a2 = a;
-  const char *s2 = "Fall17_17Nov2017B_V12";// (13 TeV)";
-  const char *s2s = "17NovV12";
+  const char *s2 = "Fall17_17Nov2017_V20";// (13 TeV)";
+  const char *s2s = "17NovV20";
+  // const char *s2 = "Fall17_17Nov2017B_V12";// (13 TeV)";
+  // const char *s2s = "17NovV12";
 
 
 
@@ -497,12 +534,17 @@ void compareJECversions(string algo="AK4PFchs",
   //normal PU
   const double x_pt[] =
     {10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
+    //    {24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
      97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
      507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
      //_paper ? 1999. : 1890.,
      2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4500, 5000};
      //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
 
+
+  // //TEST
+  // const double x_pt[] =
+  //   {56, 64, 74, 84,97};
 
 
   const int ndiv_pt = sizeof(x_pt)/sizeof(x_pt[0])-1;// - (_paper ? 3 : 0);
@@ -530,23 +572,26 @@ void compareJECversions(string algo="AK4PFchs",
   if (_paper) {
     if (l1rc && !l1 && !l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.70,1.10);
     //    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.8,1.7);
-    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.4,1.2); //PUPPI, AK8 PF
-    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
+    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.4,1.5); //PF, CHS
+    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.0,1.2); //PF, CHS vs raw pt
+    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
     //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.5,1.4); //AK8 PF CHS
     if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.40,1.10);
+    //    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.0,1.10); // vs raw pt
     //    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.90,1.30);
     if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.85,1.35);
-    //    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,1.70);
-    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.50); //AK4 PUPPI
+    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,1.70);//CHS, PF
+    //if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.50); //AK4 PUPPI
     //
     if (l1rc && !l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.70,1.10);
-    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.4,1.10);
-    //    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,1.70);//CHS
-    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.50);//PUPPI
+    //    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.4,1.10);
+    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.0,1.10); //vs raw pt
+    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,1.90);//CHS
+    //    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.50);//PUPPI
     //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.7,1.2);// AK8 PF
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);//PUPPI
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.5,1.4);// AK8 PF CHS
-    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);// PUPPI
+    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.5,1.5);// PF CHS
+    //if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.0,1.4);// PF CHS vs raw pt
+    //if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);// PUPPI
     if (l1 && l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.8,1.7);
 
     if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.9,1.30);
@@ -820,6 +865,61 @@ void compareJECversions(string algo="AK4PFchs",
 	} // energy < 6500
       } // for j
     } // pt bins
+
+    // // ***** Pt = 5 
+    // {
+    //   double pt = 5.;
+    //   double energy = pt*cosh(eta);
+      
+    //   if (energy < 6500.) {
+    // 	// Asymmetric corrections now
+    // 	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+    // 			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+    // 	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+    // 			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
+    // 	//	cout<<"y1 = "<<y1<<" "<<getEtaPtE(JEC1, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC1, (-1)*eta, pt, energy)<<endl;
+    // 	double y3(0);
+    // 	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+    // 				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
+    // 	// negative side
+    // 	if (_usenegative) {
+    // 	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+    // 	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+    // 	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
+    // 	}
+    // 	// positive side
+    // 	if (_usepositive) {
+    // 	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+    // 	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+    // 	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
+    // 	}
+    // 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
+    // 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
+    // 	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
+	
+    // 	g1a->SetPoint(g1a->GetN(), eta, y1);
+    // 	g2a->SetPoint(g2a->GetN(), eta, y2);
+    // 	g3a->SetPoint(g3a->GetN(), eta, y3);
+    // 	g21a->SetPoint(g21a->GetN(),eta, y2/y1);
+    // 	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
+    // 	//
+    // 	g1a_pl->SetPoint(g1a_pl->GetN(), eta, y1*(1+e1));
+    // 	g1a_mn->SetPoint(g1a_mn->GetN(), eta, y1*(1-e1));
+    // 	g1a_e->SetPoint(i-1, eta, y1);
+    // 	g1a_e->SetPointError(i-1, 0., y1*e1);
+    // 	//
+    // 	g2a_pl->SetPoint(g2a_pl->GetN(), eta, y2*(1+e2));
+    // 	g2a_mn->SetPoint(g2a_mn->GetN(), eta, y2*(1-e2));
+    // 	g2a_e->SetPoint(i-1, eta, y2);
+    // 	g2a_e->SetPointError(i-1, 0., y2*e2);
+    // 	//
+    // 	g3a_pl->SetPoint(g3a_pl->GetN(), eta, y3*(1+e3));
+    // 	g3a_mn->SetPoint(g3a_mn->GetN(), eta, y3*(1-e3));
+    // 	g3a_e->SetPoint(i-1, eta, y3);
+    // 	g3a_e->SetPointError(i-1, 0., y3*e3);
+    //   }
+    // }
+
  
     // ***** Pt = 30 
     {
@@ -827,51 +927,51 @@ void compareJECversions(string algo="AK4PFchs",
       double energy = pt*cosh(eta);
       
       if (energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	//	cout<<"y1 = "<<y1<<" "<<getEtaPtE(JEC1, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC1, (-1)*eta, pt, energy)<<endl;
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
+    	// Asymmetric corrections now
+    	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
+    			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
+    	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
+    			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
+    	//	cout<<"y1 = "<<y1<<" "<<getEtaPtE(JEC1, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC1, (-1)*eta, pt, energy)<<endl;
+    	double y3(0);
+    	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
+    				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
+    	// negative side
+    	if (_usenegative) {
+    	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
+    	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
+    	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
+    	}
+    	// positive side
+    	if (_usepositive) {
+    	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
+    	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
+    	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
+    	}
+    	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
+    	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
+    	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
 	
-	g1a->SetPoint(g1a->GetN(), eta, y1);
-	g2a->SetPoint(g2a->GetN(), eta, y2);
-	g3a->SetPoint(g3a->GetN(), eta, y3);
-	g21a->SetPoint(g21a->GetN(),eta, y2/y1);
-	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
-	//
-	g1a_pl->SetPoint(g1a_pl->GetN(), eta, y1*(1+e1));
-	g1a_mn->SetPoint(g1a_mn->GetN(), eta, y1*(1-e1));
-	g1a_e->SetPoint(i-1, eta, y1);
-	g1a_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2a_pl->SetPoint(g2a_pl->GetN(), eta, y2*(1+e2));
-	g2a_mn->SetPoint(g2a_mn->GetN(), eta, y2*(1-e2));
-	g2a_e->SetPoint(i-1, eta, y2);
-	g2a_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3a_pl->SetPoint(g3a_pl->GetN(), eta, y3*(1+e3));
-	g3a_mn->SetPoint(g3a_mn->GetN(), eta, y3*(1-e3));
-	g3a_e->SetPoint(i-1, eta, y3);
-	g3a_e->SetPointError(i-1, 0., y3*e3);
+    	g1a->SetPoint(g1a->GetN(), eta, y1);
+    	g2a->SetPoint(g2a->GetN(), eta, y2);
+    	g3a->SetPoint(g3a->GetN(), eta, y3);
+    	g21a->SetPoint(g21a->GetN(),eta, y2/y1);
+    	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
+    	//
+    	g1a_pl->SetPoint(g1a_pl->GetN(), eta, y1*(1+e1));
+    	g1a_mn->SetPoint(g1a_mn->GetN(), eta, y1*(1-e1));
+    	g1a_e->SetPoint(i-1, eta, y1);
+    	g1a_e->SetPointError(i-1, 0., y1*e1);
+    	//
+    	g2a_pl->SetPoint(g2a_pl->GetN(), eta, y2*(1+e2));
+    	g2a_mn->SetPoint(g2a_mn->GetN(), eta, y2*(1-e2));
+    	g2a_e->SetPoint(i-1, eta, y2);
+    	g2a_e->SetPointError(i-1, 0., y2*e2);
+    	//
+    	g3a_pl->SetPoint(g3a_pl->GetN(), eta, y3*(1+e3));
+    	g3a_mn->SetPoint(g3a_mn->GetN(), eta, y3*(1-e3));
+    	g3a_e->SetPoint(i-1, eta, y3);
+    	g3a_e->SetPointError(i-1, 0., y3*e3);
       }
     }
 
@@ -1757,6 +1857,7 @@ void compareJECversions(string algo="AK4PFchs",
     //leg->Draw();
 
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 30 GeV",cgen));
+    //    tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 5 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
     //TLegend *leg1a = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
