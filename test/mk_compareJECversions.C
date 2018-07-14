@@ -1,22 +1,23 @@
 {
 
+  gSystem->AddLinkedLibs("-lCondFormatsJetMETObjects");
 
   //  gSystem->Load("libboost_serialization.so");
-  gSystem->AddLinkedLibs("-lboost_serialization");
-  gSystem->AddLinkedLibs("-lFWCoreUtilities");
-  gSystem->AddLinkedLibs("-lFWCoreMessageLogger");
+  // gSystem->AddLinkedLibs("-lboost_serialization");
+  // gSystem->AddLinkedLibs("-lFWCoreUtilities");
+  // gSystem->AddLinkedLibs("-lFWCoreMessageLogger");
   //gSystem->AddIncludePath("-I /cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/include/");
   //gSystem->Load("/cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/lib/libboost_serialization.so");
 
   // gSystem->Load("/cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/lib/libboost_wserialization.so");
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/Utilities.cc+");
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectorParametersHelper.cc+");
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectorParameters.cc+");
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrector.cc+");
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/FactorizedJetCorrector.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/Utilities.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectorParametersHelper.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectorParameters.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrector.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/FactorizedJetCorrector.cc+");
 
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrectionUncertainty.cc+");
-  gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectionUncertainty.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrectionUncertainty.cc+");
+  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectionUncertainty.cc+");
 
   gROOT->ProcessLine(".L test/compareJECversions.C+");
   //  gROOT->ProcessLine(".exception");

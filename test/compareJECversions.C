@@ -323,44 +323,44 @@ void compareJECversions(string algo="AK4PFchs",
 
 
 
-  str=Form("CondFormats/JetMETObjects/data/%s_L1FastJet_%s.txt",cid1,a1);
+  str=Form("JECDatabase/textFiles/%s/%s_L1FastJet_%s.txt",cid1,cid1,a1);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1L1 = new JetCorrectorParameters(str);
-  str=Form("CondFormats/JetMETObjects/data/%s_L2Relative_%s.txt",cid1,a1);
+  str=Form("JECDatabase/textFiles/%s/%s_L2Relative_%s.txt",cid1,cid1,a1);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1L2 = new JetCorrectorParameters(str);
-  str=Form("CondFormats/JetMETObjects/data/%s_L3Absolute_%s.txt",cid1,a1);
+  str=Form("JECDatabase/textFiles/%s/%s_L3Absolute_%s.txt",cid1,cid1,a1);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1L3 = new JetCorrectorParameters(str);
 
-  str=Form("CondFormats/JetMETObjects/data/%s_L2L3Residual_%s.txt",cid1,a1);
+  str=Form("JECDatabase/textFiles/%s/%s_L2L3Residual_%s.txt",cid1,cid1,a1);
   if (!mc) cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1 = (mc ? 0 : new JetCorrectorParameters(str));
-  str=Form("CondFormats/JetMETObjects/data/%s_Uncertainty_%s.txt",cid1,a1);
+  str=Form("JECDatabase/textFiles/%s/%s_Uncertainty_%s.txt",cid1,cid1,a1);
   cout << str << endl << flush;
   JetCorrectionUncertainty *jecUnc1 = new JetCorrectionUncertainty(str);
 
-  str=Form("CondFormats/JetMETObjects/data/%s_L1FastJet_%s.txt",cid2,a2);
+  str=Form("JECDatabase/textFiles/%s/%s_L1FastJet_%s.txt",cid2,cid2,a2);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar2L1 = new JetCorrectorParameters(str);
-  str=Form("CondFormats/JetMETObjects/data/%s_L2Relative_%s.txt",cid2,a2);
+  str=Form("JECDatabase/textFiles/%s/%s_L2Relative_%s.txt",cid2,cid2,a2);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar2L2 = new JetCorrectorParameters(str);
-  str=Form("CondFormats/JetMETObjects/data/%s_L3Absolute_%s.txt",cid2,a2);
+  str=Form("JECDatabase/textFiles/%s/%s_L3Absolute_%s.txt",cid2,cid2,a2);
   cout << str << endl << flush;
 
   //Comment L2L3Res to TEST MC vs DATA 
   JetCorrectorParameters *JetCorPar2L3 = new JetCorrectorParameters(str);
-  str=Form("CondFormats/JetMETObjects/data/%s_L2L3Residual_%s.txt",cid2,a2);
+  str=Form("JECDatabase/textFiles/%s/%s_L2L3Residual_%s.txt",cid2,cid2,a2);
   if (!mc) cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar2 = (mc ? 0 : new JetCorrectorParameters(str));
-  str=Form("CondFormats/JetMETObjects/data/%s_Uncertainty_%s.txt",cid2,a2);
+  str=Form("JECDatabase/textFiles/%s/%s_Uncertainty_%s.txt",cid2,cid2,a2);
   cout << str << endl << flush;
   JetCorrectionUncertainty *jecUnc2 = new JetCorrectionUncertainty(str);
 
   vector<JetCorrectorParameters> vParam1;
   if (l1rc){
-  str=Form("CondFormats/JetMETObjects/data/%s_L1RC_%s.txt",cid1,a1);
+  str=Form("JECDatabase/textFiles/%s/%s_L1RC_%s.txt",cid1,cid1,a1);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar1L1RC = new JetCorrectorParameters(str);
   vParam1.push_back(*JetCorPar1L1RC);
@@ -379,7 +379,7 @@ void compareJECversions(string algo="AK4PFchs",
   if (res && !mc && JetCorPar1)  vParam1.push_back(*JetCorPar1);
   vector<JetCorrectorParameters> vParam2;
   if (l1rc){
-  str=Form("CondFormats/JetMETObjects/data/%s_L1RC_%s.txt",cid2,a2);
+  str=Form("JECDatabase/textFiles/%s/%s_L1RC_%s.txt",cid2,cid2,a2);
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar2L1RC = new JetCorrectorParameters(str);
   vParam2.push_back(*JetCorPar2L1RC);
@@ -406,42 +406,42 @@ void compareJECversions(string algo="AK4PFchs",
   if (dothree) {
     // Note the reversed naming scheme in 2010
     /*
-    str=Form("CondFormats/JetMETObjects/data/%s_%s_L1FastJet.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_%s_L1FastJet.txt",cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L1 = new JetCorrectorParameters(str);
-    str=Form("CondFormats/JetMETObjects/data/%s_%s_L2Relative.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_%s_L2Relative.txt",cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L2 = new JetCorrectorParameters(str);
-    str=Form("CondFormats/JetMETObjects/data/%s_%s_L3Absolute.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_%s_L3Absolute.txt",cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L3 = new JetCorrectorParameters(str);
-    str=Form("CondFormats/JetMETObjects/data/%s_%s_L2L3Residual.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_%s_L2L3Residual.txt",cid3,a3);
     if (!mc) cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3 = (mc ? 0 : new JetCorrectorParameters(str));
-    str=Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_%s_Uncertainty.txt",cid3,a3);
     cout << str << endl << flush;
     jecUnc3 = new JetCorrectionUncertainty(str);
     */
-    str=Form("CondFormats/JetMETObjects/data/%s_L1FastJet_%s.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_L1FastJet_%s.txt",cid3,cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L1 = new JetCorrectorParameters(str);
-    str=Form("CondFormats/JetMETObjects/data/%s_L2Relative_%s.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_L2Relative_%s.txt",cid3,cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L2 = new JetCorrectorParameters(str);
-    str=Form("CondFormats/JetMETObjects/data/%s_L3Absolute_%s.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_L3Absolute_%s.txt",cid3,cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L3 = new JetCorrectorParameters(str);
-    str=Form("CondFormats/JetMETObjects/data/%s_L2L3Residual_%s.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_L2L3Residual_%s.txt",cid3,cid3,a3);
     if (!mc) cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3 = (mc ? 0 : new JetCorrectorParameters(str));
-    str=Form("CondFormats/JetMETObjects/data/%s_Uncertainty_%s.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_Uncertainty_%s.txt",cid3,cid3,a3);
     cout << str << endl << flush;
     jecUnc3 = new JetCorrectionUncertainty(str);
 
     vector<JetCorrectorParameters> vParam3;
     if (l1)   vParam3.push_back(*JetCorPar3L1);
     if (l1rc){
-    str=Form("CondFormats/JetMETObjects/data/%s_L1RC_%s.txt",cid3,a3);
+    str=Form("JECDatabase/textFiles/%s/%s_L1RC_%s.txt",cid3,cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L1RC = new JetCorrectorParameters(str);
    vParam3.push_back(*JetCorPar3L1RC);
