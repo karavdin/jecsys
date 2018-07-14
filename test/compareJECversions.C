@@ -23,8 +23,8 @@
 // positive true overrides negative
 //bool _usenegative = true;
 bool _usenegative = false;
-bool _usepositive = false;
-//bool _usepositive = true;
+//bool _usepositive = false;
+bool _usepositive = true;
 
 bool _useptgen = true; // iterate to produce JEC vs pTgen
 //bool _dothree  = true; // compare three JECs instead of just two
@@ -186,7 +186,7 @@ bool FillCorrectionGraph_pt(double eta, double phi, FactorizedJetCorrector *JEC1
 
 bool FillCorrectionGraph_eta(double pt, double phi, FactorizedJetCorrector *JEC1, FactorizedJetCorrector *JEC2, FactorizedJetCorrector *JEC3, 
 			    JetCorrectionUncertainty *jecUnc1, JetCorrectionUncertainty *jecUnc2, JetCorrectionUncertainty *jecUnc3, bool dothree, 
-			     bool _usenegative, bool _usepositive, TH1D *h, TGraphErrors *g1a, TGraphErrors *g2a, TGraphErrors *g3a){ 
+			     bool _usenegative, bool _usepositive, TH1D *h, TGraphErrors *g1a, TGraphErrors *g2a, TGraphErrors *g3a, TGraph *g21a){ 
   for (int i = 1; i != h->GetNbinsX()+1; ++i) {                                                           
     double eta = h->GetBinCenter(i);           
     if (fabs(eta)>5.2) continue; 
@@ -223,7 +223,7 @@ bool FillCorrectionGraph_eta(double pt, double phi, FactorizedJetCorrector *JEC1
       g1a->SetPointError(i_point, 0, e1);                                                                                                                           
       g2a->SetPointError(i_point, 0, e2);                                                                                                                           
       g3a->SetPointError(i_point, 0, e3);   
-      //      g21a->SetPoint(g21a->GetN(),eta, y2/y1);         
+      if(g21a) g21a->SetPoint(i_point,eta, y2/y1);         
     }
   }
   return true;
@@ -261,6 +261,47 @@ bool FillCorrectionGraph_pt(double eta, double phi, FactorizedJetCorrector *JEC1
       g1d->SetPoint(i_point, pt, y1);                                                                                                                        
       g2d->SetPoint(i_point, pt, y2);                                                                                                                        
       g3d->SetPoint(i_point, pt, y3);                                                                                                                        
+      g1d->SetPointError(i_point, 0, e1);                                                                                                                        
+      g2d->SetPointError(i_point, 0, e2);                                                                                                                        
+      g3d->SetPointError(i_point, 0, e3);                                                                                                                        
+    }
+  }
+  return true;
+}
+
+
+bool FillCorrectionGraph_phi(double eta, double pt, FactorizedJetCorrector *JEC1, FactorizedJetCorrector *JEC2, FactorizedJetCorrector *JEC3, 
+			    JetCorrectionUncertainty *jecUnc1, JetCorrectionUncertainty *jecUnc2, JetCorrectionUncertainty *jecUnc3, bool dothree,    
+			    bool _usenegative, bool _usepositive, TH1D *hphi, TGraphErrors *g1d, TGraphErrors *g2d, TGraphErrors *g3d){ 
+  for (int i = 1; i != hphi->GetNbinsX()+1; ++i) { 
+    double phi = hphi->GetBinCenter(i);
+    double energy = pt*cosh(eta); 
+    if (pt>1 && energy < 6600.) { 
+      // Asymmetric corrections now                                                                                                                                  
+      double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC1, (-1)*eta, pt, energy, phi));                                    
+      double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC2, (-1)*eta, pt, energy, phi));                                    
+      cout<<"y1 = "<<y1<<" y2 = "<<y2<<" eta ="<<eta<<" pt ="<<pt<<" phi = "<<phi<<endl;
+      double y3(0);                                                               
+      if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) + getEtaPtE(JEC3, (-1)*eta,pt, energy, phi));                                            
+      // negative side                                                 
+      if (_usenegative) {                                 
+	y1 = getEtaPtE(JEC1, (-1)*eta,pt, energy, phi);                                                                                                               
+	y2 = getEtaPtE(JEC2, (-1)*eta,pt, energy, phi);            
+	y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta,pt, energy, phi) : 0);
+      }                                        
+      // positive side          
+      if (_usepositive) {                                                                                                                                     
+	y1 = getEtaPtE(JEC1, (+1)*eta,pt, energy, phi);
+	y2 = getEtaPtE(JEC2, (+1)*eta,pt, energy, phi);
+	y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) : 0);
+      }                                                                                              
+      double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);                                                                                                            
+      double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);                                                                                            
+      double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
+      int i_point = g1d->GetN();
+      g1d->SetPoint(i_point, phi, y1);                                                                                                                        
+      g2d->SetPoint(i_point, phi, y2);                                                                                                                        
+      g3d->SetPoint(i_point, phi, y3);                                                                                                                        
       g1d->SetPointError(i_point, 0, e1);                                                                                                                        
       g2d->SetPointError(i_point, 0, e2);                                                                                                                        
       g3d->SetPointError(i_point, 0, e3);                                                                                                                        
@@ -437,6 +478,10 @@ void compareJECversions(string algo="AK4PFchs",
   //  TCanvas *c0 = new TCanvas(Form("c0_%s",a),Form("c0_%s",a),600,600);
   //  TCanvas *c2 = new TCanvas(Form("c2_%s",a),Form("c2_%s",a),600,600);
 
+  TH1D *hphi = new TH1D(Form("hphi_%s",a),Form(";#phi;%s L2L3 residual",a),  
+			60,-3.14,3.14);
+
+
   // const double x_eta[]={-5.191,-4.889,-4.716,-4.538,-4.363,-4.191,-4.013,-3.839,-3.664,-3.489,-3.314,-3.139,-2.964,
   // 			-2.853, -2.65, -2.5, -2.322, -2.172, -2.043, -1.93, -1.83, -1.74, -1.653, -1.566, -1.479,
   // 			-1.392, -1.305, -1.218, -1.131, -1.044, -0.957, -0.879, -0.783, -0.696, -0.609, -0.522, -0.435,
@@ -455,6 +500,7 @@ void compareJECversions(string algo="AK4PFchs",
 
   // TH1D *h = new TH1D(Form("h_%s",a),Form(";|#eta|;%s L2L3 residual",a),
   // 		     55,0,5.5);
+
   if (_usenegative) h->GetXaxis()->SetTitle("-|#eta|");
   if (_usepositive) h->GetXaxis()->SetTitle("+|#eta|");
 
@@ -504,44 +550,59 @@ void compareJECversions(string algo="AK4PFchs",
 
   h->GetYaxis()->SetTitle(Form("%s%s%s%s%s",cl1,cl2l3,cpl,cres,cl1rc));
   if (_paper) {
-    if (l1 && !l2l3 && !res) h->SetYTitle("Pileup offset correction");
-    if (!l1 && l2l3 && !res) h->SetYTitle("Simulated response correction");
-    if (!l1 && !l2l3 && res) h->SetYTitle("Residual response correction");
-    //
-    if (l1 && !l2l3 && !res) hpt->SetYTitle("Pileup offset correction");
-    if (!l1 && l2l3 && !res) hpt->SetYTitle("Simulated response correction");
-    if (!l1 && !l2l3 && res) hpt->SetYTitle("Residual response correction");
+
+    if (l1 && !l2l3 && !res){
+      h->SetYTitle("Pileup offset correction");
+      hpt->SetYTitle("Pileup offset correction");
+      hphi->SetYTitle("Pileup offset correction");
+    }
+    if (!l1 && l2l3 && !res){
+      h->SetYTitle("Simulated response correction");
+      hpt->SetYTitle("Simulated response correction");
+      hphi->SetYTitle("Simulated response correction");
+    }
+    if (!l1 && !l2l3 && res){
+      h->SetYTitle("Residual response correction");
+      hpt->SetYTitle("Residual response correction");
+      hphi->SetYTitle("Residual response correction");
+    }
   }
   h->SetMinimum(0.3);
   h->SetMaximum(2.0);
   if (_paper) {
-    if (l1rc && !l1 && !l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.70,1.10);
-    //    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.8,1.7);
-    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.4,1.2); //PUPPI, AK8 PF
-    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
-    //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.5,1.4); //AK8 PF CHS
-    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.40,1.10);
-    //    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.90,1.30);
-    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.85,1.35);
-    //    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,1.70);
-    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.50); //AK4 PUPPI
-    //
-    if (l1rc && !l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.70,1.10);
-    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.4,1.10);
-    //    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,1.70);//CHS
-    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.50);//PUPPI
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.7,1.2);// AK8 PF
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);//PUPPI
-    //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.5,1.4);// AK8 PF CHS
-    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(1.0,2.7);// PUPPI
-    if (l1 && l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.8,1.7);
+    hpt->GetXaxis()->SetRangeUser(1,7999);
+    if (l1rc && !l1 && !l2l3 && !res){
+      h->GetYaxis()->SetRangeUser(0.70,1.10);
+      hpt->GetYaxis()->SetRangeUser(0.70,1.10);
+      hphi->GetYaxis()->SetRangeUser(0.70,1.10);
+    }
+    if (l1 && l2l3 && !res){
+      h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
+      hpt->GetYaxis()->SetRangeUser(0.9,1.70);
+      hphi->GetYaxis()->SetRangeUser(0.9,1.70);
+    }
 
-    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.9,1.30);
-    if (l1 &&  l2l3 && !res) hpt->GetXaxis()->SetRangeUser(1,7999);
-    if (l1 && !l2l3 && !res) hpt->GetXaxis()->SetRangeUser(1,7999);
-    if (!l1 && l2l3 && !res) hpt->GetXaxis()->SetRangeUser(1,7999);
-    if (!l1 && !l2l3 && res) hpt->GetXaxis()->SetRangeUser(1,7999);
+    if (l1 && !l2l3 && !res){
+      h->GetYaxis()->SetRangeUser(0.40,1.10);
+      hpt->GetYaxis()->SetRangeUser(0.4,1.10);
+      hphi->GetYaxis()->SetRangeUser(0.4,1.10);
+    }
+    if (!l1 && !l2l3 && res){
+      h->GetYaxis()->SetRangeUser(0.85,1.35);
+      hpt->GetYaxis()->SetRangeUser(0.9,1.30);
+      hphi->GetYaxis()->SetRangeUser(0.9,1.30);
+    }
+    if (!l1 && l2l3 && !res){
+      h->GetYaxis()->SetRangeUser(0.9,1.70);
+      hpt->GetYaxis()->SetRangeUser(0.9,1.70);
+      hphi->GetYaxis()->SetRangeUser(0.9,1.70);
+    }
 
+    if (l1 && l2l3 && res){
+      h->GetYaxis()->SetRangeUser(0.8,1.7);
+      hpt->GetYaxis()->SetRangeUser(0.8,1.7);
+      hphi->GetYaxis()->SetRangeUser(0.8,1.7);
+    }
   }
 
   //lumi_7TeV  = (dothree ? "36 pb^{-1} + 4.9 fb^{-1}" : "4.9 fb^{-1}");
@@ -571,6 +632,9 @@ void compareJECversions(string algo="AK4PFchs",
   TCanvas *c1d50 = tdrCanvas(Form("c1d50_%s",a),hpt,4,11,kSquare);
   TCanvas *c1d30 = tdrCanvas(Form("c1d30_%s",a),hpt,4,11,kSquare);
   if (_paper) hpt->SetTitleOffset(0.97); // comma otherwise cut off
+
+  TCanvas *c1phi25_lowpt = tdrCanvas(Form("c1phi25_lowpt_%s",a),hphi,4,11,kSquare);
+  TCanvas *c1phi25_100pt = tdrCanvas(Form("c1phi25_100pt_%s",a),hphi,4,11,kSquare);
 
   TGraphErrors *g1a = new TGraphErrors(0);
   TGraphErrors *g1b = new TGraphErrors(0);
@@ -620,154 +684,13 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g21e = new TGraph(0);
   TGraph *g21f = new TGraph(0);
 
-  TGraphErrors *g1a_e = new TGraphErrors(0);
-  TGraphErrors *g1b_e = new TGraphErrors(0);
-  TGraphErrors *g1c_e = new TGraphErrors(0);
-  TGraphErrors *g1d_e = new TGraphErrors(0);
-  TGraphErrors *g1f_e = new TGraphErrors(0);
-  // TGraphErrors *g1d25_e = new TGraphErrors(0);
-  // TGraphErrors *g1d45_e = new TGraphErrors(0);
-  // TGraphErrors *g1d40_e = new TGraphErrors(0);
-  // TGraphErrors *g1d00_e = new TGraphErrors(0);
-  // TGraphErrors *g1d48_e = new TGraphErrors(0);
-  // TGraphErrors *g1d50_e = new TGraphErrors(0);
-  // TGraphErrors *g1d30_e = new TGraphErrors(0);
-  TGraphErrors *g1e_e = new TGraphErrors(0);
-  TGraph *g1a_pl = new TGraph(0);
-  TGraph *g1a_mn = new TGraph(0);
-  TGraph *g1b_pl = new TGraph(0);
-  TGraph *g1b_mn = new TGraph(0);
-  TGraph *g1c_pl = new TGraph(0);
-  TGraph *g1c_mn = new TGraph(0);
-  TGraph *g1d_pl = new TGraph(0);
-  TGraph *g1d_mn = new TGraph(0);
-  TGraph *g1f_pl = new TGraph(0);
-  TGraph *g1f_mn = new TGraph(0);
-  // TGraph *g1d25_pl = new TGraph(0);
-  // TGraph *g1d25_mn = new TGraph(0);
-  // TGraph *g1d45_pl = new TGraph(0);
-  // TGraph *g1d45_mn = new TGraph(0);
-  // TGraph *g1d40_pl = new TGraph(0);
-  // TGraph *g1d40_mn = new TGraph(0);
-  // TGraph *g1d00_pl = new TGraph(0);
-  // TGraph *g1d00_mn = new TGraph(0);
-  // TGraph *g1d48_pl = new TGraph(0);
-  // TGraph *g1d48_mn = new TGraph(0);
-  // TGraph *g1d50_pl = new TGraph(0);
-  // TGraph *g1d50_mn = new TGraph(0);
-  // TGraph *g1d30_pl = new TGraph(0);
-  // TGraph *g1d30_mn = new TGraph(0);
-  TGraph *g1e_pl = new TGraph(0);
-  TGraph *g1e_mn = new TGraph(0);
+  TGraphErrors *g1e25pt30 = new TGraphErrors(0);
+  TGraphErrors *g2e25pt30 = new TGraphErrors(0);
+  TGraphErrors *g3e25pt30 = new TGraphErrors(0);
 
-  TGraphErrors *g2a_e = new TGraphErrors(0);
-  TGraphErrors *g2b_e = new TGraphErrors(0);
-  TGraphErrors *g2c_e = new TGraphErrors(0);
-  TGraphErrors *g2d_e = new TGraphErrors(0);
-  TGraphErrors *g2f_e = new TGraphErrors(0);
-  // TGraphErrors *g2d25_e = new TGraphErrors(0);
-  // TGraphErrors *g2d30_e = new TGraphErrors(0);
-  // TGraphErrors *g2d40_e = new TGraphErrors(0);
-  // TGraphErrors *g2d00_e = new TGraphErrors(0);
-  // TGraphErrors *g2d45_e = new TGraphErrors(0);
-  // TGraphErrors *g2d48_e = new TGraphErrors(0);
-  // TGraphErrors *g2d50_e = new TGraphErrors(0);
-  TGraphErrors *g2e_e = new TGraphErrors(0);
-  TGraph *g2a_pl = new TGraph(0);
-  TGraph *g2a_mn = new TGraph(0);
-  TGraph *g2b_pl = new TGraph(0);
-  TGraph *g2b_mn = new TGraph(0);
-  TGraph *g2c_pl = new TGraph(0);
-  TGraph *g2c_mn = new TGraph(0);
-  TGraph *g2d_pl = new TGraph(0);
-  TGraph *g2d_mn = new TGraph(0);
-  TGraph *g2f_pl = new TGraph(0);
-  TGraph *g2f_mn = new TGraph(0);
-  // TGraph *g2d25_pl = new TGraph(0);
-  // TGraph *g2d25_mn = new TGraph(0);
-  // TGraph *g2d30_pl = new TGraph(0);
-  // TGraph *g2d30_mn = new TGraph(0);
-  // TGraph *g2d40_pl = new TGraph(0);
-  // TGraph *g2d40_mn = new TGraph(0);
-  // TGraph *g2d00_pl = new TGraph(0);
-  // TGraph *g2d00_mn = new TGraph(0);
-  // TGraph *g2d45_pl = new TGraph(0);
-  // TGraph *g2d45_mn = new TGraph(0);
-  // TGraph *g2d48_pl = new TGraph(0);
-  // TGraph *g2d48_mn = new TGraph(0);
-  // TGraph *g2d50_pl = new TGraph(0);
-  // TGraph *g2d50_mn = new TGraph(0);
-  TGraph *g2e_pl = new TGraph(0);
-  TGraph *g2e_mn = new TGraph(0);
-
-  TGraphErrors *g3a_e = new TGraphErrors(0);
-  TGraphErrors *g3b_e = new TGraphErrors(0);
-  TGraphErrors *g3c_e = new TGraphErrors(0);
-  TGraphErrors *g3d_e = new TGraphErrors(0);
-  TGraphErrors *g3f_e = new TGraphErrors(0);
-  // TGraphErrors *g3d25_e = new TGraphErrors(0);
-  // TGraphErrors *g3d40_e = new TGraphErrors(0);
-  // TGraphErrors *g3d00_e = new TGraphErrors(0);
-  // TGraphErrors *g3d45_e = new TGraphErrors(0);
-  // TGraphErrors *g3d48_e = new TGraphErrors(0);
-  // TGraphErrors *g3d50_e = new TGraphErrors(0);
-  // TGraphErrors *g3d30_e = new TGraphErrors(0);
-  TGraphErrors *g3e_e = new TGraphErrors(0);
-  TGraph *g3a_pl = new TGraph(0);
-  TGraph *g3a_mn = new TGraph(0);
-  TGraph *g3b_pl = new TGraph(0);
-  TGraph *g3b_mn = new TGraph(0);
-  TGraph *g3c_pl = new TGraph(0);
-  TGraph *g3c_mn = new TGraph(0);
-  TGraph *g3d_pl = new TGraph(0);
-  TGraph *g3d_mn = new TGraph(0);
-  TGraph *g3f_pl = new TGraph(0);
-  TGraph *g3f_mn = new TGraph(0);
-  // TGraph *g3d25_pl = new TGraph(0);
-  // TGraph *g3d25_mn = new TGraph(0);
-  // TGraph *g3d45_pl = new TGraph(0);
-  // TGraph *g3d45_mn = new TGraph(0);
-  // TGraph *g3d40_pl = new TGraph(0);
-  // TGraph *g3d40_mn = new TGraph(0);
-  // TGraph *g3d00_pl = new TGraph(0);
-  // TGraph *g3d00_mn = new TGraph(0);
-  // TGraph *g3d48_pl = new TGraph(0);
-  // TGraph *g3d48_mn = new TGraph(0);
-  // TGraph *g3d50_pl = new TGraph(0);
-  // TGraph *g3d50_mn = new TGraph(0);
-  // TGraph *g3d30_pl = new TGraph(0);
-  // TGraph *g3d30_mn = new TGraph(0);
-  TGraph *g3e_pl = new TGraph(0);
-  TGraph *g3e_mn = new TGraph(0);
-
-  
-  // Different projections in one loop
-  /*
-  for (int icase = 0; icase != 3; ++icase) {
-
-    TGraph *g1 = new TGraph(0);
-    TGraph *g2 = new TGraph(0);
-    TGraph *g21 = new TGraph(0);
-
-    TGraphErrors *g1_e = new TGraphErrors(0);
-    TGraph *g1_pl = new TGraph(0);
-    TGraph *g1_mn = new TGraph(0);
-    TGraphErrors *g2_e = new TGraphErrors(0);
-    TGraph *g2_pl = new TGraph(0);
-    TGraph *g2_mn = new TGraph(0);
-
-    for (int i = 1; i != h->GetNbinsX()+1; ++i) {
-      double eta = h->GetBinCenter(i);
-    } // for i
-
-    TGraphErrors *g1_e = new TGraphErrors(0);
-    TGraph *g1_pl = new TGraph(0);
-    TGraph *g1_mn = new TGraph(0);
-    TGraphErrors *g2_e = new TGraphErrors(0);
-    TGraph *g2_pl = new TGraph(0);
-    TGraph *g2_mn = new TGraph(0);
-  } // icase
-  */
+  TGraphErrors *g1e25pt100 = new TGraphErrors(0);
+  TGraphErrors *g2e25pt100 = new TGraphErrors(0);
+  TGraphErrors *g3e25pt100 = new TGraphErrors(0);
 
   const int npt = 6;
   double ptbins[npt] = {30, 40, 50, 80, 140,500};
@@ -780,8 +703,6 @@ void compareJECversions(string algo="AK4PFchs",
   for (int i = 1; i != h->GetNbinsX()+1; ++i) {
 
     double eta = h->GetBinCenter(i);
-    //    std::cout<<"eta = "<<eta<<std::endl;
-    //    if (fabs(eta)>4.7) continue;
     if (fabs(eta)>5.2) continue;
 
     // ***** Pt = 30, 50, 80, 120, 200, 500 *****
@@ -794,36 +715,26 @@ void compareJECversions(string algo="AK4PFchs",
 	//	if(pt>1000) std::cout<<"energy = "<<energy<<" pt="<<pt<<std::endl;
 	if (energy < 6500.) {
 	  // Asymmetric corrections now
-	  //	  std::cout<<"eta = "<<eta<<std::endl;
-	  //	  std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
 	  double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta,pt, energy, phi)
 	  		    + getEtaPtE(JEC1, (-1)*eta,pt, energy, phi));
-	  //	  double y1 = getEtaPtE(JEC1, eta,pt, energy, phi); //TEST
-	  // std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
 	  double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta,pt, energy, phi)
 			    + getEtaPtE(JEC2, (-1)*eta,pt, energy, phi));
-	  //	  std::cout<<"Point #"<<g21->GetN()<<" eta, R = "<<eta<<", "<<y2/y1<<" y2 = "<<y2<<" y1 = "<<y1<<std::endl;
 	  g21->SetPoint(g21->GetN(), eta, y2/y1);
 	} // energy < 6500
       } // for j
     } // pt bins
   }
  
-    // ***** Pt = 30 
-    bool isFill_pt30 = FillCorrectionGraph_eta(30.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1a, g2a, g3a); 
-    // ***** Pt = 100 
-    bool isFill_pt100 = FillCorrectionGraph_eta(100.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1b, g2b, g3b); 
-    // ***** Pt = 1000
-    bool isFill_pt1000 = FillCorrectionGraph_eta(1000.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1c, g2c, g3c); 
-    // ***** Pt = 400
-    bool isFill_pt400 = FillCorrectionGraph_eta(400.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1f, g2f, g3f); 
-    // // ***** E = 1000 
-    // double energy = 1000.;
-    // double pt = energy/cosh(eta);
-    // bool isFill_E1000 = FillCorrectionGraph_eta(pt,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1e, g2e, g3e); 
-
+  // ***** Pt = 30 
+  bool isFill_pt30 = FillCorrectionGraph_eta(30.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1a, g2a, g3a, g21a); 
+  // ***** Pt = 100 
+  bool isFill_pt100 = FillCorrectionGraph_eta(100.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1b, g2b, g3b, g21b); 
+  // ***** Pt = 1000
+  bool isFill_pt1000 = FillCorrectionGraph_eta(1000.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1c, g2c, g3c, g21c); 
+  // ***** Pt = 400
+  bool isFill_pt400 = FillCorrectionGraph_eta(400.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1f, g2f, g3f, NULL); 
+  
   for (int i = 1; i != hpt->GetNbinsX()+1; ++i) {
-
     // ***** Eta = 0  => |eta|<1.3
     const double etas[] = {0, 0.261, 0.522, 0.783, 1.044, 1.305};
     const int neta = sizeof(etas)/sizeof(etas[0])-1;
@@ -879,127 +790,72 @@ void compareJECversions(string algo="AK4PFchs",
     g1d->SetPointError(i_point, 0, sume1);
     g2d->SetPointError(i_point, 0, sume2);
     g3d->SetPointError(i_point, 0, sume3);
-
-    // //
-    // g1d_pl->SetPoint(g1d_pl->GetN(), pt, sumy1*(1+sume1));
-    // g1d_mn->SetPoint(g1d_mn->GetN(), pt, sumy1*(1-sume1));
-    // g1d_e->SetPoint(i-1, pt, sumy1);
-    // g1d_e->SetPointError(i-1, 0., sumy1*sume1);
-    // //
-    // g2d_pl->SetPoint(g2d_pl->GetN(), pt, sumy2*(1+sume2));
-    // g2d_mn->SetPoint(g2d_mn->GetN(), pt, sumy2*(1-sume2));
-    // g2d_e->SetPoint(i-1, pt, sumy2);
-    // g2d_e->SetPointError(i-1, 0., sumy2*sume2);
-    // //
-    // g3d_pl->SetPoint(g3d_pl->GetN(), pt, sumy3*(1+sume3));
-    // g3d_mn->SetPoint(g3d_mn->GetN(), pt, sumy3*(1-sume3));
-    // g3d_e->SetPoint(i-1, pt, sumy3);
-    // g3d_e->SetPointError(i-1, 0., sumy3*sume3);
   } // *** Eta = 0 => |eta|<1.3
+  
+  bool isFine_00 = FillCorrectionGraph_pt(0.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d00, g2d00, g3d00);   
+  bool isFine_25 = FillCorrectionGraph_pt(2.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d25, g2d25, g3d25);   
+  bool isFine_29 = FillCorrectionGraph_pt(2.9, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d30, g2d30, g3d30);   
+  bool isFine_40 = FillCorrectionGraph_pt(4.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d40, g2d40, g3d40);   
+  bool isFine_45 = FillCorrectionGraph_pt(4.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d45, g2d45, g3d45);   
+  bool isFine_48 = FillCorrectionGraph_pt(4.8, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d48, g2d48, g3d48);   
+  bool isFine_50 = FillCorrectionGraph_pt(5.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d50, g2d50, g3d50);   
+  //    bool isFine_25 = FillCorrectionGraph_pt(2.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d25, g2d25, g3d25, g1d25_pl, g1d25_mn, g1d25_e, g2d25_pl, g2d25_mn, g2d25_e, g3d25_pl, g3d25_mn, g3d25_e);   
 
-    bool isFine_00 = FillCorrectionGraph_pt(0.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d00, g2d00, g3d00);   
-    bool isFine_25 = FillCorrectionGraph_pt(2.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d25, g2d25, g3d25);   
-    bool isFine_29 = FillCorrectionGraph_pt(2.9, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d30, g2d30, g3d30);   
-    bool isFine_40 = FillCorrectionGraph_pt(4.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d40, g2d40, g3d40);   
-    bool isFine_45 = FillCorrectionGraph_pt(4.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d45, g2d45, g3d45);   
-    bool isFine_48 = FillCorrectionGraph_pt(4.8, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d48, g2d48, g3d48);   
-    bool isFine_50 = FillCorrectionGraph_pt(5.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d50, g2d50, g3d50);   
-    //    bool isFine_25 = FillCorrectionGraph_pt(2.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d25, g2d25, g3d25, g1d25_pl, g1d25_mn, g1d25_e, g2d25_pl, g2d25_mn, g2d25_e, g3d25_pl, g3d25_mn, g3d25_e);   
 
+bool isFine_25pt30 = FillCorrectionGraph_phi(2.5, 30.0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, 
+					     hphi, g1e25pt30, g2e25pt30, g3e25pt30);   
 
-
-  // Generic legend
-  //TLegend *leg = new TLegend(0.20,dothree ? 0.70 : 0.75,0.40,0.85,"","brNDC");
-  //leg->SetTextSize(0.045);
-  //leg->SetBorderSize(0);
-  //leg->SetFillStyle(kNone);
-  //leg->AddEntry(g2a,s2,"LPF");
-  //leg->AddEntry(g1a,s1,"LPF");
-  //if (dothree) leg->AddEntry(g3a,s3,"LPF");
-  //leg->Draw();
+bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, 
+					     hphi, g1e25pt100, g2e25pt100, g3e25pt100);   
 
   // For legends
-    //  g3a->SetFillStyle(3003);
   g3a->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3b->SetFillStyle(3003);
   g3b->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3c->SetFillStyle(3003);
   g3c->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d->SetFillStyle(3003);
   g3d->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3f->SetFillStyle(3003);
   g3f->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d25->SetFillStyle(3003);
   g3d25->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d45->SetFillStyle(3003);
   g3d45->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d40->SetFillStyle(3003);
   g3d40->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d00->SetFillStyle(3003);
   g3d00->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d48->SetFillStyle(3003);
   g3d48->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d50->SetFillStyle(3003);
   g3d50->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3d30->SetFillStyle(3003);
   g3d30->SetFillColorAlpha(kGreen+2,0.05);
-  //  g3e->SetFillStyle(3003);
+  g3e25pt30->SetFillColorAlpha(kGreen+2,0.05);
+  g3e25pt100->SetFillColorAlpha(kGreen+2,0.05);
   g3e->SetFillColorAlpha(kGreen+2,0.05);
 
-  //  g1a->SetFillStyle(3003);
   g1a->SetFillColorAlpha(kBlue,0.1);
-  //  g1b->SetFillStyle(3003);
   g1b->SetFillColorAlpha(kBlue,0.1);
-  //  g1c->SetFillStyle(3003);
   g1c->SetFillColorAlpha(kBlue,0.1);
-  //  g1d->SetFillStyle(3003);
   g1d->SetFillColorAlpha(kBlue,0.1);
-  //  g1f->SetFillStyle(3003);
   g1f->SetFillColorAlpha(kBlue,0.1);
-  //g1d25->SetFillStyle(3003);
-  //  g1d25->SetFillColorAlpha(kBlue,0.1);
   g1d25->SetFillColorAlpha(kBlue,0.2);
-  //  g1d45->SetFillStyle(3003);
   g1d45->SetFillColorAlpha(kBlue,0.1);
-  //  g1d40->SetFillStyle(3003);
   g1d40->SetFillColorAlpha(kBlue,0.1);
-  //  g1d00->SetFillStyle(3003);
   g1d00->SetFillColorAlpha(kBlue,0.1);
-  //  g1d48->SetFillStyle(3003);
   g1d48->SetFillColorAlpha(kBlue,0.1);
-  //  g1d50->SetFillStyle(3003);
   g1d50->SetFillColorAlpha(kBlue,0.1);
-  //  g1d30->SetFillStyle(3003);
   g1d30->SetFillColorAlpha(kBlue,0.1);
-  //  g1e->SetFillStyle(3003);
+  g1e25pt30->SetFillColorAlpha(kBlue,0.1);
+  g1e25pt100->SetFillColorAlpha(kBlue,0.1);
   g1e->SetFillColorAlpha(kBlue,0.1);
 
-  //  g2a->SetFillStyle(3003);
+
   g2a->SetFillColorAlpha(kRed,0.15);
-  //  g2b->SetFillStyle(3003);
   g2b->SetFillColorAlpha(kRed,0.15);
-  //  g2c->SetFillStyle(3003);
   g2c->SetFillColorAlpha(kRed,0.15);
-  //  g2d->SetFillStyle(3003);
   g2d->SetFillColorAlpha(kRed,0.15);
-  //  g2f->SetFillStyle(3003);
   g2f->SetFillColorAlpha(kRed,0.15);
-  //  g2d25->SetFillStyle(3003);
-  //  g2d25->SetFillColorAlpha(kRed,0.15);
   g2d25->SetFillColorAlpha(kRed,0.15);
-  //  g2d45->SetFillStyle(3003);
   g2d45->SetFillColorAlpha(kRed,0.15);
-  //  g2d40->SetFillStyle(3003);
   g2d40->SetFillColorAlpha(kRed,0.15);
-  //  g2d00->SetFillStyle(3003);
   g2d00->SetFillColorAlpha(kRed,0.15);
-  //  g2d48->SetFillStyle(3003);
   g2d48->SetFillColorAlpha(kRed,0.15);
-  //  g2d50->SetFillStyle(3003);
   g2d50->SetFillColorAlpha(kRed,0.15);
-  //  g2d30->SetFillStyle(3003);
   g2d30->SetFillColorAlpha(kRed,0.15);
-  //  g2e->SetFillStyle(3003);
+  g2e25pt30->SetFillColorAlpha(kRed,0.15);
+  g2e25pt100->SetFillColorAlpha(kRed,0.15);
   g2e->SetFillColorAlpha(kRed,0.15);
   
   TLatex *tex = new TLatex();
@@ -1020,41 +876,7 @@ void compareJECversions(string algo="AK4PFchs",
 
   // ***** Pt = 30
   {
-    c1a->cd();
-    //    h->DrawClone("AXIS");
-
-    // if (dothree) {
-    //   //      g3a_e->SetFillStyle(3003);
-    //   g3a_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3a_e->Draw("SAME E3");
-    //   g3a_pl->SetLineColor(kGreen-9);
-    //   g3a_pl->SetLineStyle(kSolid);//kDotted);
-    //   g3a_pl->Draw("SAMEL");
-    //   g3a_mn->SetLineColor(kGreen-9);
-    //   g3a_mn->SetLineStyle(kSolid);//kDotted);
-    //   g3a_mn->Draw("SAMEL");
-    // }
-
-    // //    g1a_e->SetFillStyle(3003);
-    // g1a_e->SetFillColorAlpha(kBlue,0.1);
-    // g1a_e->Draw("SAME E3");
-    // g1a_pl->SetLineColor(kBlue-9);
-    // g1a_pl->SetLineStyle(kSolid);//kDotted);
-    // g1a_pl->Draw("SAMEL");
-    // g1a_mn->SetLineColor(kBlue-9);
-    // g1a_mn->SetLineStyle(kSolid);//kDotted);
-    // g1a_mn->Draw("SAMEL");
-
-    // //    g2a_e->SetFillStyle(3003);
-    // g2a_e->SetFillColorAlpha(kRed,0.15);
-    // g2a_e->Draw("SAME E3");
-    // g2a_pl->SetLineColor(kRed-9);
-    // g2a_pl->SetLineStyle(kSolid);//kDotted);
-    // g2a_pl->Draw("SAMEL");
-    // g2a_mn->SetLineColor(kRed-9);
-    // g2a_mn->SetLineStyle(kSolid);//kDotted);
-    // g2a_mn->Draw("SAMEL");
-        
+    c1a->cd();        
     if (dothree) {
       g3a->SetMarkerStyle(kOpenSquare);
       g3a->SetMarkerColor(kGreen+2);
@@ -1072,66 +894,23 @@ void compareJECversions(string algo="AK4PFchs",
     g2a->SetLineColor(kRed);
     g2a->Draw("SAMEPL4");
 
-    //tex->DrawLatex(0.20,0.88,Form("p_{T,%s} = 30 GeV%s, %s",cgen,
-    //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
-    //				  cm));
-    //tex->DrawLatex(0.65,0.80,a);
-    //leg->Draw();
 
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 30 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1a = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //    TLegend *leg1a = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
     TLegend *leg1a = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1a->SetTextSize(0.03);
-    //    TLegend *leg1a = tdrLeg(0.17, dothree ? 0.16 : 0.22, 0.47, 0.50);
     leg1a->SetHeader(texmap[a]);
     leg1a->AddEntry(g2a,s2,"LPF");
     leg1a->AddEntry(g1a,s1,"LPF");
     if (dothree) leg1a->AddEntry(g3a,s3,"LPF");
 
-    //if (!mc) cmsPrel(_lumi);
-    //if (mc)  cmsPrel(0);
     gPad->RedrawAxis();
   }
 
   // ***** Pt = 100
   {
     c1b->cd();
-    //h->DrawClone("AXIS");
-
-    // if (dothree) {
-    //   //      g3b_e->SetFillStyle(3003);
-    //   g3b_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3b_e->Draw("SAME E3");
-    //   g3b_pl->SetLineColor(kGreen-9);
-    //   g3b_pl->SetLineStyle(kSolid);//kDotted);
-    //   g3b_pl->Draw("SAMEL");
-    //   g3b_mn->SetLineColor(kGreen-9);
-    //   g3b_mn->SetLineStyle(kSolid);//kDotted);
-    //   g3b_mn->Draw("SAMEL");    
-    // }
-
-    // //    g1b_e->SetFillStyle(3003);
-    // g1b_e->SetFillColorAlpha(kBlue,0.1);
-    // g1b_e->Draw("SAME E3");
-    // g1b_pl->SetLineColor(kBlue-9);
-    // g1b_pl->SetLineStyle(kSolid);//kDotted);
-    // g1b_pl->Draw("SAMEL");
-    // g1b_mn->SetLineColor(kBlue-9);
-    // g1b_mn->SetLineStyle(kSolid);//kDotted);
-    // g1b_mn->Draw("SAMEL");    
-
-    // //    g2b_e->SetFillStyle(3003);
-    // g2b_e->SetFillColorAlpha(kRed,0.15);
-    // g2b_e->Draw("SAME E3");
-    // g2b_pl->SetLineColor(kRed-9);
-    // g2b_pl->SetLineStyle(kSolid);//kDotted);
-    // g2b_pl->Draw("SAMEL");
-    // g2b_mn->SetLineColor(kRed-9);
-    // g2b_mn->SetLineStyle(kSolid);//kDotted);
-    // g2b_mn->Draw("SAMEL");    
 
     if (dothree) {
       g3b->SetMarkerStyle(kOpenSquare);
@@ -1150,17 +929,8 @@ void compareJECversions(string algo="AK4PFchs",
     g2b->SetLineColor(kRed);
     g2b->Draw("SAMEPL4");
     
-    //tex->DrawLatex(0.20,0.88,Form("p_{T,%s} = 100 GeV%s, %s",cgen,
-    //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
-    //				  cm));
-    //tex->DrawLatex(0.65,0.80,a);
-    //leg->Draw();
-
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 100 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
-
-    //TLegend *leg1b = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    //    TLegend *leg1b = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
 
     TLegend *leg1b = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1b->SetTextSize(0.03);
@@ -1169,47 +939,12 @@ void compareJECversions(string algo="AK4PFchs",
     leg1b->AddEntry(g2b,s2,"LPF");
     leg1b->AddEntry(g1b,s1,"LPF");
     if (dothree) leg1b->AddEntry(g3b,s3,"LPF");
-
-    //if (!mc) cmsPrel(_lumi);
-    //if (mc)  cmsPrel(0);
     gPad->RedrawAxis();
   }
 
   // ***** Pt = 1000
   {
     c1c->cd();
-
-    // if (dothree) {
-    //   g3c_e->SetFillStyle(3003);
-    //   g3c_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3c_e->Draw("SAME E3");
-    //   g3c_pl->SetLineColor(kGreen-9);
-    //   g3c_pl->SetLineStyle(kSolid);
-    //   g3c_pl->Draw("SAMEL");
-    //   g3c_mn->SetLineColor(kGreen-9);
-    //   g3c_mn->SetLineStyle(kSolid);
-    //   g3c_mn->Draw("SAMEL");    
-    // }
-
-    // g1c_e->SetFillStyle(3003);
-    // g1c_e->SetFillColorAlpha(kBlue,0.1);
-    // g1c_e->Draw("SAME E3");
-    // g1c_pl->SetLineColor(kBlue-9);
-    // g1c_pl->SetLineStyle(kSolid);
-    // g1c_pl->Draw("SAMEL");
-    // g1c_mn->SetLineColor(kBlue-9);
-    // g1c_mn->SetLineStyle(kSolid);
-    // g1c_mn->Draw("SAMEL");    
-
-    // g2c_e->SetFillStyle(3003);
-    // g2c_e->SetFillColorAlpha(kRed,0.15);
-    // g2c_e->Draw("SAME E3");
-    // g2c_pl->SetLineColor(kRed-9);
-    // g2c_pl->SetLineStyle(kSolid);
-    // g2c_pl->Draw("SAMEL");
-    // g2c_mn->SetLineColor(kRed-9);
-    // g2c_mn->SetLineStyle(kSolid);
-    // g2c_mn->Draw("SAMEL");    
 
     if (dothree) {
       g3c->SetMarkerStyle(kOpenSquare);
@@ -1231,8 +966,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 1000 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1c = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    //    TLegend *leg1c = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
     TLegend *leg1c = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1c->SetTextSize(0.03);
     leg1c->SetHeader(texmap[a]);
@@ -1246,39 +979,6 @@ void compareJECversions(string algo="AK4PFchs",
  // ***** Pt = 400
   {
     c1f->cd();
-
-    // if (dothree) {
-    //   g3f_e->SetFillStyle(3003);
-    //   g3f_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3f_e->Draw("SAME E3");
-    //   g3f_pl->SetLineColor(kGreen-9);
-    //   g3f_pl->SetLineStyle(kSolid);
-    //   g3f_pl->Draw("SAMEL");
-    //   g3f_mn->SetLineColor(kGreen-9);
-    //   g3f_mn->SetLineStyle(kSolid);
-    //   g3f_mn->Draw("SAMEL");    
-    // }
-
-    // g1f_e->SetFillStyle(3003);
-    // g1f_e->SetFillColorAlpha(kBlue,0.1);
-    // g1f_e->Draw("SAME E3");
-    // g1f_pl->SetLineColor(kBlue-9);
-    // g1f_pl->SetLineStyle(kSolid);
-    // g1f_pl->Draw("SAMEL");
-    // g1f_mn->SetLineColor(kBlue-9);
-    // g1f_mn->SetLineStyle(kSolid);
-    // g1f_mn->Draw("SAMEL");    
-
-    // g2f_e->SetFillStyle(3003);
-    // g2f_e->SetFillColorAlpha(kRed,0.15);
-    // g2f_e->Draw("SAME E3");
-    // g2f_pl->SetLineColor(kRed-9);
-    // g2f_pl->SetLineStyle(kSolid);
-    // g2f_pl->Draw("SAMEL");
-    // g2f_mn->SetLineColor(kRed-9);
-    // g2f_mn->SetLineStyle(kSolid);
-    // g2f_mn->Draw("SAMEL");    
-
     if (dothree) {
       g3f->SetMarkerStyle(kOpenSquare);
       g3f->SetMarkerColor(kGreen+2);
@@ -1299,8 +999,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 400 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1c = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    //    TLegend *leg1c = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
     TLegend *leg1c = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1c->SetTextSize(0.03);
     leg1c->SetHeader(texmap[a]);
@@ -1311,119 +1009,10 @@ void compareJECversions(string algo="AK4PFchs",
     gPad->RedrawAxis();
   }
 
-  // // ***** E = 1000
-  // {
-  //   c1e->cd();
-  //   //h->DrawClone("AXIS");
-
-  //   // if (dothree) {
-  //   //   g3e_e->SetFillStyle(3003);
-  //   //   g3e_e->SetFillColorAlpha(kGreen+2,0.05);
-  //   //   g3e_e->Draw("SAME E3");
-  //   //   g3e_pl->SetLineColor(kGreen-9);
-  //   //   g3e_pl->SetLineStyle(kSolid);//kDotted);
-  //   //   g3e_pl->Draw("SAMEL");
-  //   //   g3e_mn->SetLineColor(kGreen-9);
-  //   //   g3e_mn->SetLineStyle(kSolid);//kDotted);
-  //   //   g3e_mn->Draw("SAMEL");
-  //   // }
-
-  //   // g1e_e->SetFillStyle(3003);
-  //   // g1e_e->SetFillColorAlpha(kBlue,0.1);
-  //   // g1e_e->Draw("SAME E3");
-  //   // g1e_pl->SetLineColor(kBlue-9);
-  //   // g1e_pl->SetLineStyle(kSolid);//kDotted);
-  //   // g1e_pl->Draw("SAMEL");
-  //   // g1e_mn->SetLineColor(kBlue-9);
-  //   // g1e_mn->SetLineStyle(kSolid);//kDotted);
-  //   // g1e_mn->Draw("SAMEL");
-
-  //   // g2e_e->SetFillStyle(3003);
-  //   // g2e_e->SetFillColorAlpha(kRed,0.15);
-  //   // g2e_e->Draw("SAME E3");
-  //   // g2e_pl->SetLineColor(kRed-9);
-  //   // g2e_pl->SetLineStyle(kSolid);//kDotted);
-  //   // g2e_pl->Draw("SAMEL");
-  //   // g2e_mn->SetLineColor(kRed-9);
-  //   // g2e_mn->SetLineStyle(kSolid);//kDotted);
-  //   // g2e_mn->Draw("SAMEL");
-    
-  //   if (dothree) {
-  //     g3e->SetMarkerStyle(kOpenSquare);
-  //     g3e->SetMarkerColor(kGreen+2);
-  //     g3e->SetLineColor(kGreen+2);
-  //     g3e->Draw("SAMEPL4");
-  //   }
-
-  //   g1e->SetMarkerStyle(kFullSquare);
-  //   g1e->SetMarkerColor(kBlue);
-  //   g1e->SetLineColor(kBlue);
-  //   g1e->Draw("SAMEPL4");
-    
-  //   g2e->SetMarkerStyle(kFullCircle);
-  //   g2e->SetMarkerColor(kRed);
-  //   g2e->SetLineColor(kRed);
-  //   g2e->Draw("SAMEPL4");
-    
-  //   //tex->DrawLatex(0.20,0.88,Form("E_{%s} = 1000 GeV%s, %s",cgen,
-  //   //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
-  //   //				  cm));
-  //   //tex->DrawLatex(0.65,0.80,a);
-  //   //leg->Draw();
-
-  //   tex->DrawLatex(0.19,0.75,Form("E_{%s} = 1000 GeV",cgen));
-  //   if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
-
-  //   //TLegend *leg1e = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-  //   //    TLegend *leg1e = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
-  //   TLegend *leg1e = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
-  //   leg1e->SetTextSize(0.03);
-  //   leg1e->SetHeader(texmap[a]);
-  //   leg1e->AddEntry(g2e,s2,"LPF");
-  //   leg1e->AddEntry(g1e,s1,"LPF");
-  //   if (dothree) leg1e->AddEntry(g3e,s3,"LPF");
-
-  //   //if (!mc) cmsPrel(_lumi);
-  //   //if (mc)  cmsPrel(0);
-  //   gPad->RedrawAxis();
-  // }
-
   // ***** Eta = 0
   {
     c1d->cd();
     c1d->SetLogx();
-    
-    // if (dothree) {
-    //   g3d_e->SetFillStyle(3003);
-    //   g3d_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d_e->Draw("SAME E3");
-    //   g3d_pl->SetLineColor(kGreen-9);
-    //   g3d_pl->SetLineStyle(kSolid);
-    //   g3d_pl->Draw("SAMEL");
-    //   g3d_mn->SetLineColor(kGreen-9);
-    //   g3d_mn->SetLineStyle(kSolid);
-    //   g3d_mn->Draw("SAMEL");
-    // }
-
-    // g1d_e->SetFillStyle(3003);
-    // g1d_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d_e->Draw("SAME E3");
-    // g1d_pl->SetLineColor(kBlue-9);
-    // g1d_pl->SetLineStyle(kSolid);
-    // g1d_pl->Draw("SAMEL");
-    // g1d_mn->SetLineColor(kBlue-9);
-    // g1d_mn->SetLineStyle(kSolid);
-    // g1d_mn->Draw("SAMEL");
-
-    // g2d_e->SetFillStyle(3003);
-    // g2d_e->SetFillColorAlpha(kRed,0.15);
-    // g2d_e->Draw("SAME E3");
-    // g2d_pl->SetLineColor(kRed-9);
-    // g2d_pl->SetLineStyle(kSolid);
-    // g2d_pl->Draw("SAMEL");
-    // g2d_mn->SetLineColor(kRed-9);
-    // g2d_mn->SetLineStyle(kSolid);
-    // g2d_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d->SetMarkerStyle(kOpenSquare);
@@ -1442,13 +1031,9 @@ void compareJECversions(string algo="AK4PFchs",
     g2d->SetLineColor(kRed);
     g2d->Draw("SAMEPL4");
 
-    //    tex->DrawLatex(0.19,0.75,"|#eta| = 0");
     tex->DrawLatex(0.19,0.75,"|#eta|<1.3");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d->SetTextSize(0.03);
     leg1d->SetHeader(texmap[a]);
@@ -1464,38 +1049,6 @@ void compareJECversions(string algo="AK4PFchs",
     c1d25->cd();
     c1d25->SetLogx();
     
-    // if (dothree) {
-    //   g3d25_e->SetFillStyle(3003);
-    //   g3d25_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d25_e->Draw("SAME E3");
-    //   g3d25_pl->SetLineColor(kGreen-9);
-    //   g3d25_pl->SetLineStyle(kSolid);
-    //   g3d25_pl->Draw("SAMEL");
-    //   g3d25_mn->SetLineColor(kGreen-9);
-    //   g3d25_mn->SetLineStyle(kSolid);
-    //   g3d25_mn->Draw("SAMEL");
-    // }
-
-    // g1d25_e->SetFillStyle(3003);
-    // g1d25_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d25_e->Draw("SAME E3");
-    // g1d25_pl->SetLineColor(kBlue-9);
-    // g1d25_pl->SetLineStyle(kSolid);
-    // g1d25_pl->Draw("SAMEL");
-    // g1d25_mn->SetLineColor(kBlue-9);
-    // g1d25_mn->SetLineStyle(kSolid);
-    // g1d25_mn->Draw("SAMEL");
-
-    // g2d25_e->SetFillStyle(3003);
-    // g2d25_e->SetFillColorAlpha(kRed,0.15);
-    // g2d25_e->Draw("SAME E3");
-    // g2d25_pl->SetLineColor(kRed-9);
-    // g2d25_pl->SetLineStyle(kSolid);
-    // g2d25_pl->Draw("SAMEL");
-    // g2d25_mn->SetLineColor(kRed-9);
-    // g2d25_mn->SetLineStyle(kSolid);
-    // g2d25_mn->Draw("SAMEL");
-        
     if (dothree) {
       g3d25->SetMarkerStyle(kOpenSquare);
       g3d25->SetMarkerColor(kGreen+2);
@@ -1506,21 +1059,16 @@ void compareJECversions(string algo="AK4PFchs",
     g1d25->SetMarkerStyle(kFullSquare);
     g1d25->SetMarkerColor(kBlue);
     g1d25->SetLineColor(kBlue);
-    //    g1d25->Draw("SAMEPL4");
     g1d25->Draw("SAMEPL4");
 
     g2d25->SetMarkerStyle(kFullCircle);
     g2d25->SetMarkerColor(kRed);
     g2d25->SetLineColor(kRed);
-    //    g2d25->Draw("SAMEPL4");
     g2d25->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 2.5");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d25 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d25->SetTextSize(0.03);
     leg1d25->SetHeader(texmap[a]);
@@ -1535,39 +1083,6 @@ void compareJECversions(string algo="AK4PFchs",
   {
     c1d45->cd();
     c1d45->SetLogx();
-    
-    // if (dothree) {
-    //   g3d45_e->SetFillStyle(3003);
-    //   g3d45_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d45_e->Draw("SAME E3");
-    //   g3d45_pl->SetLineColor(kGreen-9);
-    //   g3d45_pl->SetLineStyle(kSolid);
-    //   g3d45_pl->Draw("SAMEL");
-    //   g3d45_mn->SetLineColor(kGreen-9);
-    //   g3d45_mn->SetLineStyle(kSolid);
-    //   g3d45_mn->Draw("SAMEL");
-    // }
-
-    // g1d45_e->SetFillStyle(3003);
-    // g1d45_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d45_e->Draw("SAME E3");
-    // g1d45_pl->SetLineColor(kBlue-9);
-    // g1d45_pl->SetLineStyle(kSolid);
-    // g1d45_pl->Draw("SAMEL");
-    // g1d45_mn->SetLineColor(kBlue-9);
-    // g1d45_mn->SetLineStyle(kSolid);
-    // g1d45_mn->Draw("SAMEL");
-
-    // g2d45_e->SetFillStyle(3003);
-    // g2d45_e->SetFillColorAlpha(kRed,0.15);
-    // g2d45_e->Draw("SAME E3");
-    // g2d45_pl->SetLineColor(kRed-9);
-    // g2d45_pl->SetLineStyle(kSolid);
-    // g2d45_pl->Draw("SAMEL");
-    // g2d45_mn->SetLineColor(kRed-9);
-    // g2d45_mn->SetLineStyle(kSolid);
-    // g2d45_mn->Draw("SAMEL");
-        
     if (dothree) {
       g3d45->SetMarkerStyle(kOpenSquare);
       g3d45->SetMarkerColor(kGreen+2);
@@ -1587,10 +1102,6 @@ void compareJECversions(string algo="AK4PFchs",
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.5");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
-
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d45 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d45->SetTextSize(0.03);
     leg1d45->SetHeader(texmap[a]);
@@ -1605,39 +1116,6 @@ void compareJECversions(string algo="AK4PFchs",
   {
     c1d40->cd();
     c1d40->SetLogx();
-    
-    // if (dothree) {
-    //   g3d40_e->SetFillStyle(3003);
-    //   g3d40_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d40_e->Draw("SAME E3");
-    //   g3d40_pl->SetLineColor(kGreen-9);
-    //   g3d40_pl->SetLineStyle(kSolid);
-    //   g3d40_pl->Draw("SAMEL");
-    //   g3d40_mn->SetLineColor(kGreen-9);
-    //   g3d40_mn->SetLineStyle(kSolid);
-    //   g3d40_mn->Draw("SAMEL");
-    // }
-
-    // g1d40_e->SetFillStyle(3003);
-    // g1d40_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d40_e->Draw("SAME E3");
-    // g1d40_pl->SetLineColor(kBlue-9);
-    // g1d40_pl->SetLineStyle(kSolid);
-    // g1d40_pl->Draw("SAMEL");
-    // g1d40_mn->SetLineColor(kBlue-9);
-    // g1d40_mn->SetLineStyle(kSolid);
-    // g1d40_mn->Draw("SAMEL");
-
-    // g2d40_e->SetFillStyle(3003);
-    // g2d40_e->SetFillColorAlpha(kRed,0.15);
-    // g2d40_e->Draw("SAME E3");
-    // g2d40_pl->SetLineColor(kRed-9);
-    // g2d40_pl->SetLineStyle(kSolid);
-    // g2d40_pl->Draw("SAMEL");
-    // g2d40_mn->SetLineColor(kRed-9);
-    // g2d40_mn->SetLineStyle(kSolid);
-    // g2d40_mn->Draw("SAMEL");
-        
     if (dothree) {
       g3d40->SetMarkerStyle(kOpenSquare);
       g3d40->SetMarkerColor(kGreen+2);
@@ -1658,9 +1136,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d40 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d40->SetTextSize(0.03);
     leg1d40->SetHeader(texmap[a]);
@@ -1674,38 +1149,6 @@ void compareJECversions(string algo="AK4PFchs",
   {
     c1d00->cd();
     c1d00->SetLogx();
-    
-    // if (dothree) {
-    //   g3d00_e->SetFillStyle(3003);
-    //   g3d00_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d00_e->Draw("SAME E3");
-    //   g3d00_pl->SetLineColor(kGreen-9);
-    //   g3d00_pl->SetLineStyle(kSolid);
-    //   g3d00_pl->Draw("SAMEL");
-    //   g3d00_mn->SetLineColor(kGreen-9);
-    //   g3d00_mn->SetLineStyle(kSolid);
-    //   g3d00_mn->Draw("SAMEL");
-    // }
-
-    // g1d00_e->SetFillStyle(3003);
-    // g1d00_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d00_e->Draw("SAME E3");
-    // g1d00_pl->SetLineColor(kBlue-9);
-    // g1d00_pl->SetLineStyle(kSolid);
-    // g1d00_pl->Draw("SAMEL");
-    // g1d00_mn->SetLineColor(kBlue-9);
-    // g1d00_mn->SetLineStyle(kSolid);
-    // g1d00_mn->Draw("SAMEL");
-
-    // g2d00_e->SetFillStyle(3003);
-    // g2d00_e->SetFillColorAlpha(kRed,0.15);
-    // g2d00_e->Draw("SAME E3");
-    // g2d00_pl->SetLineColor(kRed-9);
-    // g2d00_pl->SetLineStyle(kSolid);
-    // g2d00_pl->Draw("SAMEL");
-    // g2d00_mn->SetLineColor(kRed-9);
-    // g2d00_mn->SetLineStyle(kSolid);
-    // g2d00_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d00->SetMarkerStyle(kOpenSquare);
@@ -1727,9 +1170,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,"|#eta| = 0.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d00 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d00->SetTextSize(0.03);
     leg1d00->SetHeader(texmap[a]);
@@ -1744,39 +1184,7 @@ void compareJECversions(string algo="AK4PFchs",
   {
     c1d48->cd();
     c1d48->SetLogx();
-    
-    // if (dothree) {
-    //   g3d48_e->SetFillStyle(3003);
-    //   g3d48_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d48_e->Draw("SAME E3");
-    //   g3d48_pl->SetLineColor(kGreen-9);
-    //   g3d48_pl->SetLineStyle(kSolid);
-    //   g3d48_pl->Draw("SAMEL");
-    //   g3d48_mn->SetLineColor(kGreen-9);
-    //   g3d48_mn->SetLineStyle(kSolid);
-    //   g3d48_mn->Draw("SAMEL");
-    // }
-
-    // g1d48_e->SetFillStyle(3003);
-    // g1d48_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d48_e->Draw("SAME E3");
-    // g1d48_pl->SetLineColor(kBlue-9);
-    // g1d48_pl->SetLineStyle(kSolid);
-    // g1d48_pl->Draw("SAMEL");
-    // g1d48_mn->SetLineColor(kBlue-9);
-    // g1d48_mn->SetLineStyle(kSolid);
-    // g1d48_mn->Draw("SAMEL");
-
-    // g2d48_e->SetFillStyle(3003);
-    // g2d48_e->SetFillColorAlpha(kRed,0.15);
-    // g2d48_e->Draw("SAME E3");
-    // g2d48_pl->SetLineColor(kRed-9);
-    // g2d48_pl->SetLineStyle(kSolid);
-    // g2d48_pl->Draw("SAMEL");
-    // g2d48_mn->SetLineColor(kRed-9);
-    // g2d48_mn->SetLineStyle(kSolid);
-    // g2d48_mn->Draw("SAMEL");
-        
+            
     if (dothree) {
       g3d48->SetMarkerStyle(kOpenSquare);
       g3d48->SetMarkerColor(kGreen+2);
@@ -1797,9 +1205,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.8");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d48 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d48->SetTextSize(0.03);
     leg1d48->SetHeader(texmap[a]);
@@ -1816,38 +1221,6 @@ void compareJECversions(string algo="AK4PFchs",
     c1d50->cd();
     c1d50->SetLogx();
     
-    // if (dothree) {
-    //   g3d50_e->SetFillStyle(3003);
-    //   g3d50_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d50_e->Draw("SAME E3");
-    //   g3d50_pl->SetLineColor(kGreen-9);
-    //   g3d50_pl->SetLineStyle(kSolid);
-    //   g3d50_pl->Draw("SAMEL");
-    //   g3d50_mn->SetLineColor(kGreen-9);
-    //   g3d50_mn->SetLineStyle(kSolid);
-    //   g3d50_mn->Draw("SAMEL");
-    // }
-
-    // g1d50_e->SetFillStyle(3003);
-    // g1d50_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d50_e->Draw("SAME E3");
-    // g1d50_pl->SetLineColor(kBlue-9);
-    // g1d50_pl->SetLineStyle(kSolid);
-    // g1d50_pl->Draw("SAMEL");
-    // g1d50_mn->SetLineColor(kBlue-9);
-    // g1d50_mn->SetLineStyle(kSolid);
-    // g1d50_mn->Draw("SAMEL");
-
-    // g2d50_e->SetFillStyle(3003);
-    // g2d50_e->SetFillColorAlpha(kRed,0.15);
-    // g2d50_e->Draw("SAME E3");
-    // g2d50_pl->SetLineColor(kRed-9);
-    // g2d50_pl->SetLineStyle(kSolid);
-    // g2d50_pl->Draw("SAMEL");
-    // g2d50_mn->SetLineColor(kRed-9);
-    // g2d50_mn->SetLineStyle(kSolid);
-    // g2d50_mn->Draw("SAMEL");
-        
     if (dothree) {
       g3d50->SetMarkerStyle(kOpenSquare);
       g3d50->SetMarkerColor(kGreen+2);
@@ -1868,9 +1241,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,"|#eta| = 5.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d50 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d50->SetTextSize(0.03);
     leg1d50->SetHeader(texmap[a]);
@@ -1888,38 +1258,6 @@ void compareJECversions(string algo="AK4PFchs",
     c1d30->cd();
     c1d30->SetLogx();
     
-    // if (dothree) {
-    //   g3d30_e->SetFillStyle(3003);
-    //   g3d30_e->SetFillColorAlpha(kGreen+2,0.05);
-    //   g3d30_e->Draw("SAME E3");
-    //   g3d30_pl->SetLineColor(kGreen-9);
-    //   g3d30_pl->SetLineStyle(kSolid);
-    //   g3d30_pl->Draw("SAMEL");
-    //   g3d30_mn->SetLineColor(kGreen-9);
-    //   g3d30_mn->SetLineStyle(kSolid);
-    //   g3d30_mn->Draw("SAMEL");
-    // }
-
-    // g1d30_e->SetFillStyle(3003);
-    // g1d30_e->SetFillColorAlpha(kBlue,0.1);
-    // g1d30_e->Draw("SAME E3");
-    // g1d30_pl->SetLineColor(kBlue-9);
-    // g1d30_pl->SetLineStyle(kSolid);
-    // g1d30_pl->Draw("SAMEL");
-    // g1d30_mn->SetLineColor(kBlue-9);
-    // g1d30_mn->SetLineStyle(kSolid);
-    // g1d30_mn->Draw("SAMEL");
-
-    // g2d30_e->SetFillStyle(3003);
-    // g2d30_e->SetFillColorAlpha(kRed,0.15);
-    // g2d30_e->Draw("SAME E3");
-    // g2d30_pl->SetLineColor(kRed-9);
-    // g2d30_pl->SetLineStyle(kSolid);
-    // g2d30_pl->Draw("SAMEL");
-    // g2d30_mn->SetLineColor(kRed-9);
-    // g2d30_mn->SetLineStyle(kSolid);
-    // g2d30_mn->Draw("SAMEL");
-        
     if (dothree) {
       g3d30->SetMarkerStyle(kOpenSquare);
       g3d30->SetMarkerColor(kGreen+2);
@@ -1940,9 +1278,6 @@ void compareJECversions(string algo="AK4PFchs",
     tex->DrawLatex(0.19,0.75,"|#eta| = 2.9");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1d = tdrLeg(0.60, dothree ? 0.66 : 0.72, 0.90, 0.90);
-    //TLegend *leg1d = tdrLeg(0.57, dothree ? 0.66 : 0.72, 0.87, 0.90);
-    //    TLegend *leg1d = tdrLeg(0.57, dothree ? 0.71 : 0.77, 0.87, 0.95);
     TLegend *leg1d30 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
     leg1d30->SetTextSize(0.03);
     leg1d30->SetHeader(texmap[a]);
@@ -1954,6 +1289,79 @@ void compareJECversions(string algo="AK4PFchs",
   }//** Eta 3.0
 
 
+  // ***** Eta = 2.5, pt =30 vs phi
+  {
+    c1phi25_lowpt->cd();
+        
+    if (dothree) {
+      g3e25pt30->SetMarkerStyle(kOpenSquare);
+      g3e25pt30->SetMarkerColor(kGreen+2);
+      g3e25pt30->SetLineColor(kGreen+2);
+      g3e25pt30->Draw("SAMEPL4");
+    }
+    //    g1e25pt30->Print();
+    g1e25pt30->SetMarkerStyle(kFullSquare);
+    g1e25pt30->SetMarkerColor(kBlue);
+    g1e25pt30->SetLineColor(kBlue);
+    g1e25pt30->Draw("SAMEPL4");
+
+    g2e25pt30->SetMarkerStyle(kFullCircle);
+    g2e25pt30->SetMarkerColor(kRed);
+    g2e25pt30->SetLineColor(kRed);
+    g2e25pt30->Draw("SAMEPL4");
+    
+    if (_usenegative) tex->DrawLatex(0.19,0.70,Form("#eta=-2.5, p_{T,%s} = 30 GeV",cgen)); //h->GetXaxis()->SetTitle("-|#eta|");
+    if (_usepositive) tex->DrawLatex(0.19,0.70,Form("#eta=+2.5, p_{T,%s} = 30 GeV",cgen));//h->GetXaxis()->SetTitle("+|#eta|");
+
+
+    if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
+
+    TLegend *leg1e25pt30 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1e25pt30->SetTextSize(0.03);
+    leg1e25pt30->SetHeader(texmap[a]);
+    leg1e25pt30->AddEntry(g2e25pt30,s2,"LPF");
+    leg1e25pt30->AddEntry(g1e25pt30,s1,"LPF");
+    if (dothree) leg1e25pt30->AddEntry(g3e25pt30,s3,"LPF");
+
+    gPad->RedrawAxis();
+  }
+
+  // ***** Eta = 2.5, pt =100 vs phi
+  {
+    c1phi25_100pt->cd();
+        
+    if (dothree) {
+      g3e25pt100->SetMarkerStyle(kOpenSquare);
+      g3e25pt100->SetMarkerColor(kGreen+2);
+      g3e25pt100->SetLineColor(kGreen+2);
+      g3e25pt100->Draw("SAMEPL4");
+    }
+    //    g1e25pt100->Print();
+    g1e25pt100->SetMarkerStyle(kFullSquare);
+    g1e25pt100->SetMarkerColor(kBlue);
+    g1e25pt100->SetLineColor(kBlue);
+    g1e25pt100->Draw("SAMEPL4");
+
+    g2e25pt100->SetMarkerStyle(kFullCircle);
+    g2e25pt100->SetMarkerColor(kRed);
+    g2e25pt100->SetLineColor(kRed);
+    g2e25pt100->Draw("SAMEPL4");
+
+    //    tex->DrawLatex(0.19,0.70,Form("|#eta|=2.5, p_{T,%s} = 100 GeV",cgen));
+    if (_usenegative) tex->DrawLatex(0.19,0.70,Form("#eta=-2.5, p_{T,%s} = 100 GeV",cgen)); //h->GetXaxis()->SetTitle("-|#eta|");
+    if (_usepositive) tex->DrawLatex(0.19,0.70,Form("#eta=+2.5, p_{T,%s} = 100 GeV",cgen));//h->GetXaxis()->SetTitle("+|#eta|");
+
+    if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
+
+    TLegend *leg1e25pt100 = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+    leg1e25pt100->SetTextSize(0.03);
+    leg1e25pt100->SetHeader(texmap[a]);
+    leg1e25pt100->AddEntry(g2e25pt100,s2,"LPF");
+    leg1e25pt100->AddEntry(g1e25pt100,s1,"LPF");
+    if (dothree) leg1e25pt100->AddEntry(g3e25pt100,s3,"LPF");
+
+    gPad->RedrawAxis();
+  }
 
   string ctype = string(cl1)+string(cl2l3)+string(cplus)+string(cres)+string(cl1rc);
   const char *cs = ctype.c_str();
@@ -1970,7 +1378,10 @@ void compareJECversions(string algo="AK4PFchs",
     c1d48->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta48.pdf",a,cm,cs));
     c1d50->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta50.pdf",a,cm,cs));
     c1d30->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta30.pdf",a,cm,cs));
-    c1e->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Q1000.pdf",a,cm,cs));
+    c1phi25_lowpt->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta25Pt030.pdf",a,cm,cs));
+    c1phi25_100pt->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta25Pt100.pdf",a,cm,cs));
+
+    //    c1e->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Q1000.pdf",a,cm,cs));
   }
   if (_C) {
     c1a->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Pt030.C",a,cm,cs));
@@ -1985,7 +1396,9 @@ void compareJECversions(string algo="AK4PFchs",
     c1d48->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta48.C",a,cm,cs));
     c1d50->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta50.C",a,cm,cs));
     c1d30->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Eta30.C",a,cm,cs));
-    c1e->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Q1000.C",a,cm,cs));
+    c1phi25_lowpt->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta25Pt030.C",a,cm,cs));
+    c1phi25_100pt->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Eta25Pt100.C",a,cm,cs));
+    //    c1e->SaveAs(Form("pdfC/compareJECversions_%s_%s_%s_Q1000.C",a,cm,cs));
   }
 
   // ***** Multiple pT bins for ratio only
