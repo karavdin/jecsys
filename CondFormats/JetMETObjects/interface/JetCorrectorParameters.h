@@ -17,8 +17,8 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include "FWCore/Utilities/interface/Exception.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
+//#include "FWCore/Utilities/interface/Exception.h"
+//#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 class JetCorrectorParametersHelper;
 
@@ -54,7 +54,7 @@ class JetCorrectorParameters
         std::vector<std::string> mParVar;
         std::vector<std::string> mBinVar;
     
-      COND_SERIALIZABLE;
+	COND_SERIALIZABLE;
     };
     //---------------- Record class --------------------------------
     //-- Each Record holds the properties of a bin ----------------- 
@@ -88,7 +88,7 @@ class JetCorrectorParameters
         std::vector<float> mMax;
         std::vector<float> mParameters;
     
-      COND_SERIALIZABLE;
+	COND_SERIALIZABLE;
     };
      
     //-------- Constructors --------------
@@ -121,7 +121,7 @@ class JetCorrectorParameters
 
     std::shared_ptr<JetCorrectorParametersHelper>                              helper                      COND_TRANSIENT; 
 
-  COND_SERIALIZABLE;
+    COND_SERIALIZABLE;
 };
 std::ostream& operator<<(std::ostream& out, const JetCorrectorParameters::Record& fBin);
 
@@ -240,7 +240,7 @@ class JetCorrectorParametersCollection {
 
   friend struct                          JetCorrectorParametersInitializeTransients;
 
- COND_SERIALIZABLE;
+  COND_SERIALIZABLE;
 
 };
 

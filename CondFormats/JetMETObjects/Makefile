@@ -38,7 +38,7 @@ CXX          = g++
 
 
 ROOTCXXFLAGS = $(shell $(ROOTSYS)/bin/root-config --cflags)
-CXXFLAGS     = -O3 -Wall -fPIC -DSTANDALONE -I. $(ROOTCXXFLAGS)
+CXXFLAGS     = -O3 -Wall -fPIC -DSTANDALONE -I. $(ROOTCXXFLAGS) -I/cvmfs/cms.cern.ch/slc6_amd64_gcc630/cms/cmssw/CMSSW_10_1_4/src/ -I/cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/include/
 
 ROOTLIBS     = $(shell $(ROOTSYS)/bin/root-config --libs)
 
@@ -61,7 +61,7 @@ setup:
 	mkdir -p $(BINDIR)
 
 lib: $(OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(ROOTLIBS) -o $(LIBDIR)/$(LIB)
+	$(CXX) $(CXXFLAGS) -shared $(OBJS) $(ROOTLIBS) -L/cvmfs/cms.cern.ch/slc6_amd64_gcc630/cms/cmssw/CMSSW_10_1_4/lib/slc6_amd64_gcc630/ -lCommonToolsUtils.so -L/cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/lib/ -lboost_serialization.so -o $(LIBDIR)/$(LIB)
 
 clean:
 	rm -rf $(OBJS) $(LIBDIR)/$(LIB) CondFormats \

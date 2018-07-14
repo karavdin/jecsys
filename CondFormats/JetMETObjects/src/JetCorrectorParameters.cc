@@ -518,8 +518,8 @@ JetCorrectorParameters const & JetCorrectorParametersCollection::operator[]( key
   for ( ; i != iend; ++i ) {
     if ( k == i->first ) return i->second;
   }
-  throw cms::Exception("InvalidInput") << " cannot find key " << static_cast<int>(k)
-                                       << " in the JEC payload, this usually means you have to change the global tag" << std::endl;
+  // throw cms::Exception("InvalidInput") << " cannot find key " << static_cast<int>(k)
+  //                                      << " in the JEC payload, this usually means you have to change the global tag" << std::endl;
 }
 
 // Get a list of valid keys. These will contain hashed keys
@@ -600,7 +600,7 @@ JetCorrectorParametersCollection::findKey( std::string const & label ) const {
   }
 
   // Didn't find default corrections, throw exception
-  throw cms::Exception("InvalidInput") << " Cannot find label " << label << std::endl;
+  //throw cms::Exception("InvalidInput") << " Cannot find label " << label << std::endl;
 
 }
 
@@ -608,7 +608,7 @@ JetCorrectorParametersCollection::findKey( std::string const & label ) const {
 //#include "FWCore/Framework/interface/EventSetup.h"
 //#include "FWCore/Framework/interface/ESHandle.h"
 //#include "FWCore/Framework/interface/ModuleFactory.h"
-#include "FWCore/Utilities/interface/typelookup.h"
+//#include "FWCore/Utilities/interface/typelookup.h"
 
-TYPELOOKUP_DATA_REG(JetCorrectorParameters);
-TYPELOOKUP_DATA_REG(JetCorrectorParametersCollection);
+//TYPELOOKUP_DATA_REG(JetCorrectorParameters);
+//TYPELOOKUP_DATA_REG(JetCorrectorParametersCollection);
