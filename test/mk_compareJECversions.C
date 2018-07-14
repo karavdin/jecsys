@@ -1,33 +1,9 @@
 {
 
   gSystem->AddLinkedLibs("-lCondFormatsJetMETObjects");
-
-  //  gSystem->Load("libboost_serialization.so");
-  // gSystem->AddLinkedLibs("-lboost_serialization");
-  // gSystem->AddLinkedLibs("-lFWCoreUtilities");
-  // gSystem->AddLinkedLibs("-lFWCoreMessageLogger");
-  //gSystem->AddIncludePath("-I /cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/include/");
-  //gSystem->Load("/cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/lib/libboost_serialization.so");
-
-  // gSystem->Load("/cvmfs/cms.cern.ch/slc6_amd64_gcc630/external/boost/1.63.0/lib/libboost_wserialization.so");
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/Utilities.cc+");
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectorParametersHelper.cc+");
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectorParameters.cc+");
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrector.cc+");
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/FactorizedJetCorrector.cc+");
-
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/SimpleJetCorrectionUncertainty.cc+");
-  // gROOT->ProcessLine(".L CondFormats/JetMETObjects/src/JetCorrectionUncertainty.cc+");
-
   gROOT->ProcessLine(".L test/compareJECversions.C+");
   //  gROOT->ProcessLine(".exception");
 
-  //  compareJECversions("AK4PFchs",true,false,false,"MC"); // L1
-  //compareJECversions("AK4PFchs",false,true,false,"MC"); // L2L3
-  //compareJECversions("AK4PFchs",true,true,false,"MC"); // L1L2L3
-  //compareJECversions("AK8PFchs",true,true,false,"MC"); // L1L2L3
-  //  compareJECversions("AK8PF",true,true,false,"MC"); // L1L2L3
-  //  compareJECversions("AK4PF",true,true,false,"MC"); // L1L2L3
 
   //  compareJECversions("AK4PFPuppi",true,true,false,false,"MC"); // L1L2L3
   //  compareJECversions("AK4PFPuppi",false,false,true,false,"MC"); // L2L3
@@ -51,7 +27,7 @@
   // //  compareJECversions("AK4PFchs",false,false,false,true,"MC"); // L1RC
   //  compareJECversions("AK4PFchs",true,false,false,false,"MC"); // L1
   // compareJECversions("AK4PFchs",true,true,false,false,"MC"); // L1L2L3
-  // compareJECversions("AK4PFchs",false,true,false,false,"MC"); // L2L3
+   compareJECversions("AK4PFchs",false,true,false,false,"MC"); // L2L3
 
   //  compareJECversions("AK8PFchs",true,false,false,false,"MC"); // L1
   //  compareJECversions("AK8PFchs",false,true,false,false,"MC"); // L2L3
@@ -84,7 +60,7 @@
   // compareJECversions("AK4PFchs",false,true,false,false,"DATA"); // L2L3  
   // compareJECversions("AK4PFchs",false,false,false,true,"DATA"); // L1RC
   // compareJECversions("AK4PFchs",true,false,false,false,"DATA"); // L1FastJet
-  compareJECversions("AK4PFchs",false,false,true,false,"DATA"); // L2L3Res
+  //  compareJECversions("AK4PFchs",false,false,true,false,"DATA"); // L2L3Res
   // compareJECversions("AK4PFchs",true,true,true,false,"DATA"); // L1L2L3+Res
   // compareJECversions("AK4PFchs",true,true,false,false,"DATA"); // L1L2L3
 

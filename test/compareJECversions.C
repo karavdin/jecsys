@@ -31,11 +31,7 @@ bool _useptgen = true; // iterate to produce JEC vs pTgen
 bool _dothree  = false; // compare two JECs
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
-//const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
-//const double _mu = 23.1; // 2016RunH
 const double _mu = 32.8; // 2018 RunAB
-//const double _mu = 10.0; // TEST
-//const double _mu = 19.1; // 2016RunEF
 //const double _lumi = 19800.;
 bool _pdf = true; // save .pdf
 bool _C   = false;//true; // save .C
@@ -43,44 +39,32 @@ bool _mc(false);
 string _alg("");
 
 // Mapping from mu to NPV and rho
-// Derived from inclusive jet data, |eta|<1.3, jt320: prhovstrpu, pnpvvstrpu
-// TF1 *f1 = new TF1("f1","[0]+[1]*x+[2]*x*x",7,33);
-// for (int i=0; i!=f1->GetNpar(); ++i) cout<<Form("%1.4g, ",f1->GetParameter(i)); cout<<endl;
-//
-// prhovstrpu->Fit(f1,"R")
+//derived in L1Res studies 
 double getRho(double mu) {
-
-  double p[3] = {1.009, 0.5515, 0.0003597}; // DATA
-
+  double p[3] = {-0.350, 0.599, -0.0011}; // DATA (2018A)
   return (p[0]+p[1]*mu+p[2]*mu*mu);
 
 }
-// pnpvvstrpu->Fit(f1,"R")
 double getNPV(double mu) {
-
-  double p[3] = {1.032, 0.7039, -0.001319}; // DATA
-
+  double p[3] = {0.369, 0.755, -0.0013}; // DATA (2018A)
   return (p[0]+p[1]*mu+p[2]*mu*mu);
 }
 
 void setEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
-	       int mu) {
+	       double mu, double phi=0) {
 
   assert(jec);
   
   int npv = getNPV(mu);
   double rho = getRho(mu);
-
+  jec->setJetPhi(phi); //2018 can contain phi dependence
   jec->setJetEta(eta);
   jec->setJetPt(pt);
-  // L1Offset
   jec->setJetE(e);
   jec->setNPV(npv);
   // L1FastJet
-  //  bool is5 = (_alg=="AK5PF"||_alg=="AK5PFchs"||_alg=="AK5CALO");
   bool is4 = (_alg=="AK4PF"||_alg=="AK4PFchs"||_alg=="AK4CALO");
-  //  double jeta = TMath::Pi()*(is5 ? 0.5*0.5 : 0.7*0.7);
-  double jeta = TMath::Pi()*(is4 ? 0.4*0.4 : 0.8*0.8);//TEST
+  double jeta = TMath::Pi()*(is4 ? 0.4*0.4 : 0.8*0.8);
   jec->setJetA(jeta);
   jec->setRho(rho);
 
@@ -101,9 +85,8 @@ Double_t funcCorrPt(Double_t *x, Double_t *p) {
 }
 
 double getEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
-		 int mu = _mu) {
-  // std::cout<<"getEtaPtE eta = "<<eta<<std::endl;
-  setEtaPtE(jec, eta, pt, e, mu);
+		 double phi=0, double mu = _mu) {
+  setEtaPtE(jec, eta, pt, e, mu, phi);
 
   // if using pTgen, need to iterate to solve ptreco
   if (_useptgen) {
@@ -114,11 +97,9 @@ double getEtaPtE(FactorizedJetCorrector *jec, double eta, double pt, double e,
     // Find ptreco that gives pTreco*JEC = pTgen
     double ptreco = fCorrPt->GetX(ptgen,1,6500);
 
-    setEtaPtE(jec, eta, ptreco, e, mu);
+    setEtaPtE(jec, eta, ptreco, e, mu, phi);
   }
   double JEC_val = jec->getCorrection();
-  //  std::cout<<"getEtaPtE JEC = "<<JEC_val<<std::endl;
-  //  std::cout<<"getEtaPtE eta in the end = "<<eta<<std::endl;
   return JEC_val;
 } // getEtaPtE
 
@@ -148,13 +129,156 @@ double getEtaPtUncert(JetCorrectionUncertainty *unc,
 } // getEtaPtUncert
 
 
+bool FillCorrectionGraph_pt(double eta, double phi, FactorizedJetCorrector *JEC1, FactorizedJetCorrector *JEC2, FactorizedJetCorrector *JEC3, 
+			    JetCorrectionUncertainty *jecUnc1, JetCorrectionUncertainty *jecUnc2, JetCorrectionUncertainty *jecUnc3, bool dothree, 
+			    bool _usenegative, bool _usepositive,
+			    TH1D *hpt, TGraph *g1d, TGraph *g2d, TGraph *g3d, TGraph *g1d_pl, TGraph *g1d_mn, TGraphErrors *g1d_e,  
+			    TGraph *g2d_pl, TGraph *g2d_mn, TGraphErrors *g2d_e, TGraph *g3d_pl, TGraph *g3d_mn, TGraphErrors *g3d_e){
+  for (int i = 1; i != hpt->GetNbinsX()+1; ++i) { 
+    double pt = hpt->GetBinCenter(i);                                                                                                                                
+    double energy = pt*cosh(eta);                                                                                                                                    
+    if (pt>1 && energy < 6500.) {                                                                                                                                    
+      // Asymmetric corrections now                                                                                                                                  
+      double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC1, (-1)*eta, pt, energy, phi));                                    
+      double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC2, (-1)*eta, pt, energy, phi));                                    
+      //   cout<<"y1 = "<<y1<<" y2 = "<<y2<<" eta ="<<eta<<" pt ="<<pt<<" phi = "<<phi<<endl;
+      double y3(0);                                                               
+      if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) + getEtaPtE(JEC3, (-1)*eta,pt, energy, phi));                                            
+      // negative side                                                 
+      if (_usenegative) {                                 
+	y1 = getEtaPtE(JEC1, (-1)*eta,pt, energy, phi);                                                                                                               
+	y2 = getEtaPtE(JEC2, (-1)*eta,pt, energy, phi);            
+	y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta,pt, energy, phi) : 0);
+      }                                        
+      // positive side          
+      if (_usepositive) {                                                                                                                                     
+	y1 = getEtaPtE(JEC1, (+1)*eta,pt, energy, phi);
+	y2 = getEtaPtE(JEC2, (+1)*eta,pt, energy, phi);
+	y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) : 0);
+      }                                                                                              
+      double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);                                                                                                            
+      double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);                                                                                            
+      double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);                                                                          
+      g1d->SetPoint(g1d->GetN(), pt, y1);                                                                                                                        
+      g2d->SetPoint(g2d->GetN(), pt, y2);                                                                                                                        
+      g3d->SetPoint(g3d->GetN(), pt, y3);                                                                                                                        
+      //                                                                                                                                                             
+      g1d_pl->SetPoint(g1d_pl->GetN(), pt, y1*(1+e1));                                                                                                           
+      g1d_mn->SetPoint(g1d_mn->GetN(), pt, y1*(1-e1));                                                                                                           
+      g1d_e->SetPoint(i-1, pt, y1);                                                                                                                                
+      g1d_e->SetPointError(i-1, 0., y1*e1);                                                                                                                        
+      //                                                                                                                                                             
+      g2d_pl->SetPoint(g2d_pl->GetN(), pt, y2*(1+e2));                                                                                                           
+      g2d_mn->SetPoint(g2d_mn->GetN(), pt, y2*(1-e2));                                                                                                           
+      g2d_e->SetPoint(i-1, pt, y2);                                                                                                                                
+      g2d_e->SetPointError(i-1, 0., y2*e2);             
+      //                                                                                                                                                             
+      g3d_pl->SetPoint(g3d_pl->GetN(), pt, y3*(1+e3));                                                                                                           
+      g3d_mn->SetPoint(g3d_mn->GetN(), pt, y3*(1-e3));                                                                                                           
+      g3d_e->SetPoint(i-1, pt, y3);                                                                                                                                
+      g3d_e->SetPointError(i-1, 0., y3*e3);   
+    }
+  }
+  return true;
+}
+
+
+
+bool FillCorrectionGraph_eta(double pt, double phi, FactorizedJetCorrector *JEC1, FactorizedJetCorrector *JEC2, FactorizedJetCorrector *JEC3, 
+			    JetCorrectionUncertainty *jecUnc1, JetCorrectionUncertainty *jecUnc2, JetCorrectionUncertainty *jecUnc3, bool dothree, 
+			     bool _usenegative, bool _usepositive, TH1D *h, TGraphErrors *g1a, TGraphErrors *g2a, TGraphErrors *g3a){ 
+  for (int i = 1; i != h->GetNbinsX()+1; ++i) {                                                           
+    double eta = h->GetBinCenter(i);           
+    if (fabs(eta)>5.2) continue; 
+    double energy = pt*cosh(eta);                                                                                                          
+    if (energy < 6500.) {                                                                                                                                            
+      // Asymmetric corrections now                                                                                                                                  
+      double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta,pt, energy, phi)                                                                                                     
+		       + getEtaPtE(JEC1, (-1)*eta,pt, energy, phi));                                                                                                
+      double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta,pt, energy, phi)                                                                                                     
+		       + getEtaPtE(JEC2, (-1)*eta,pt, energy, phi));                                                                                                
+      double y3(0);                                                                                                                                                  
+      if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta,pt, energy, phi)                                                                                               
+			     + getEtaPtE(JEC3, (-1)*eta,pt, energy, phi));                                                                                          
+      // negative side                                                                                                                                               
+      if (_usenegative) {                                                                                                                                            
+	y1 = getEtaPtE(JEC1, (-1)*eta,pt, energy, phi);                                                                                                              
+	y2 = getEtaPtE(JEC2, (-1)*eta,pt, energy, phi);                                                                                                              
+	y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta,pt, energy, phi) : 0);                                                                                              
+      }                                                                                                                                                              
+      // positive side                                                                                                                                               
+      if (_usepositive) {                                                                                                                                            
+	y1 = getEtaPtE(JEC1, (+1)*eta,pt, energy, phi);                                                                                                              
+	y2 = getEtaPtE(JEC2, (+1)*eta,pt, energy, phi);                                                                                                              
+	y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) : 0);                                                                                              
+      }                                                                                                                                                              
+      double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);          
+      double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);                                                                                                            
+      double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);    
+      int i_point = g1a->GetN();
+      g1a->SetPoint(i_point, eta, y1);                                                                                                                           
+      g2a->SetPoint(i_point, eta, y2);                                                                                                                           
+      g3a->SetPoint(i_point, eta, y3);   
+
+      g1a->SetPointError(i_point, 0, e1);                                                                                                                           
+      g2a->SetPointError(i_point, 0, e2);                                                                                                                           
+      g3a->SetPointError(i_point, 0, e3);   
+      //      g21a->SetPoint(g21a->GetN(),eta, y2/y1);         
+    }
+  }
+  return true;
+}
+
+bool FillCorrectionGraph_pt(double eta, double phi, FactorizedJetCorrector *JEC1, FactorizedJetCorrector *JEC2, FactorizedJetCorrector *JEC3, 
+			    JetCorrectionUncertainty *jecUnc1, JetCorrectionUncertainty *jecUnc2, JetCorrectionUncertainty *jecUnc3, bool dothree,    
+			    bool _usenegative, bool _usepositive, TH1D *hpt, TGraphErrors *g1d, TGraphErrors *g2d, TGraphErrors *g3d){ 
+  for (int i = 1; i != hpt->GetNbinsX()+1; ++i) { 
+    double pt = hpt->GetBinCenter(i);                                                                                                                                
+    double energy = pt*cosh(eta); 
+    if (pt>1 && energy < 6600.) { 
+      // Asymmetric corrections now                                                                                                                                  
+      double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC1, (-1)*eta, pt, energy, phi));                                    
+      double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC2, (-1)*eta, pt, energy, phi));                                    
+      //      cout<<"y1 = "<<y1<<" y2 = "<<y2<<" eta ="<<eta<<" pt ="<<pt<<" phi = "<<phi<<endl;
+      double y3(0);                                                               
+      if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) + getEtaPtE(JEC3, (-1)*eta,pt, energy, phi));                                            
+      // negative side                                                 
+      if (_usenegative) {                                 
+	y1 = getEtaPtE(JEC1, (-1)*eta,pt, energy, phi);                                                                                                               
+	y2 = getEtaPtE(JEC2, (-1)*eta,pt, energy, phi);            
+	y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta,pt, energy, phi) : 0);
+      }                                        
+      // positive side          
+      if (_usepositive) {                                                                                                                                     
+	y1 = getEtaPtE(JEC1, (+1)*eta,pt, energy, phi);
+	y2 = getEtaPtE(JEC2, (+1)*eta,pt, energy, phi);
+	y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) : 0);
+      }                                                                                              
+      double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);                                                                                                            
+      double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);                                                                                            
+      double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
+      int i_point = g1d->GetN();
+      g1d->SetPoint(i_point, pt, y1);                                                                                                                        
+      g2d->SetPoint(i_point, pt, y2);                                                                                                                        
+      g3d->SetPoint(i_point, pt, y3);                                                                                                                        
+      g1d->SetPointError(i_point, 0, e1);                                                                                                                        
+      g2d->SetPointError(i_point, 0, e2);                                                                                                                        
+      g3d->SetPointError(i_point, 0, e3);                                                                                                                        
+    }
+  }
+  return true;
+}
+
+
+
+
 void compareJECversions(string algo="AK4PFchs",
 			bool l1=true, bool l2l3=true, bool res=true,  bool l1rc=false, 
 			string type="DATA") {
 
   setTDRStyle();
   writeExtraText = false; // for JEC paper CWR
-
+  double phi = 0;//TEST
   assert(type=="DATA" || type=="MC");
   const bool mc = (type=="MC");
   _mc = mc;
@@ -174,152 +298,24 @@ void compareJECversions(string algo="AK4PFchs",
   string sgen = (_useptgen ? "corr" : "raw");
   const char *cgen = sgen.c_str();
 
- // // // 2015 JEC, low PU version
- //  string sid2 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall15_25nsV3_DATA");
- //  const char *cid2 = sid2.c_str();
- //  const char *a2 = a;
- //  const char *s2 = "Fall15_25nsV3";// (13 TeV)";
- //  const char *s2s = "Fall15_25nsV3";
+  //2018
+  string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
+  const char *cid1 = sid1.c_str();
+  const char *a1 = a;
+  const char *s1 = "Summer18_V1";// (13 TeV)";
+  const char *s1s = "Summer18V1";
 
- //  string sid1 = (_mc ? "Fall17_17Nov2017_V3_MC" : "Fall15_25nsV2_DATA");
- //  const char *cid1 = sid1.c_str();
- //  const char *a1 = a;
- //  const char *s1 = "Fall15_25nsV2";// (13 TeV)";
- //  const char *s1s = "Fall15_25nsV2";
+  string sid2 = (_mc ? "Summer18_V1_wPhi_MC" : "Fall17_17Nov2017B_V11_DATA");
+  const char *cid2 = sid2.c_str();
+  const char *a2 = a;
+  const char *s2 = "Summer18_V1_wPhi";// (13 TeV)";
+  const char *s2s = "Summer18V1_wPhi";
 
-
-
-  // // // // //2017 "17Nov" JEC
   string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
   const char *cid3 = sid3.c_str();
   const char *a3 = a;
   const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
   const char *s3s = "17NovV8";
-
-  // string sid1 = (_mc ? "Fall17_17Nov2017_V3_MC" : "Fall17_17Nov2017B_V6_DATA");
-  // const char *cid1 = sid1.c_str();
-  // const char *a1 = a;
-  // const char *s1 = "Fall17_17Nov2017B_V6";// (13 TeV)";
-  // const char *s1s = "17NovV6";
-
-  string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
-  const char *cid1 = sid1.c_str();
-  const char *a1 = a;
-  // const char *s1 = "Summer18_V1";// (13 TeV)";
-  // const char *s1s = "Summer18V1";
-
-  const char *s1 = "Fall17_17Nov2017B_V11";// (13 TeV)";
-  const char *s1s = "17NovV11";
-
-  string sid2 = (_mc ? "Fall17_17Nov2017_V20_MC" : "Fall17_17Nov2017B_V12_DATA");
-  const char *cid2 = sid2.c_str();
-  const char *a2 = a;
-  const char *s2 = "Fall17_17Nov2017B_V12";// (13 TeV)";
-  const char *s2s = "17NovV12";
-
-
-
-// //  //  // // // //2016 legacy JEC
-//   string sid2 = (_mc ? "Summer16_07Aug2017_V11_MC" : "Summer16_07Aug2017GH_V12_DATA");
-//   const char *cid2 = sid2.c_str();
-//   const char *a2 = a;
-//   const char *s2 = "Summer16_07Aug2017_V12";
-//   const char *s2s = "07AugV12";
-
-//   string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_07Aug2017GH_V11_DATA");
-//   const char *cid1 = sid1.c_str();
-//   const char *a1 = a;
-//   const char *s1 = "Summer16_07Aug2017_V11";// (13 TeV)";
-//   const char *s1s = "07AugV11";
-
-//   string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
-//   const char *cid3 = sid3.c_str();
-//   const char *a3 = a;
-//   const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
-//   const char *s3s = "17NovV8";
-
-//   // const char *s3 = "Summer16_03Feb2017H_V9";// (13 TeV)";
-//   // const char *s3s = "03FebV9";
-
-// //   string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Summer16_23Sep2016HV4_DATA");
-// //   const char *cid1 = sid1.c_str();
-// //   const char *a1 = a;
-// //   // const char *s1 = "Summer16_23Sep2016H4";// (13 TeV)";
-// //   // const char *s1s = "23Sep2016HV4";
-
-// //   const char *s1 = "Summer16_07Aug2017_V3";// (13 TeV)";
-// //   const char *s1s = "07AugV3";
-
-// // //   string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Spring16_25nsV6_DATA");
-// // //   const char *cid1 = sid1.c_str();
-// // //   const char *a1 = a;
-// // //   const char *s1 = "Spring16_25nsV6";// (13 TeV)";
-// // //   const char *s1s = "Spring16_25nsV6";
-
- 
-
-// //   // string sid2 = (_mc ? "Summer16_07Aug2017_V5_MC" : "Summer16_07Aug2017BCD_V5_DATA");
-// //   // const char *cid2 = sid2.c_str();
-// //   // const char *a2 = a;
-// //   // const char *s2 = "Summer16_07Aug2017BCD_V5";
-// //   // const char *s2s = "07AugV5";
-
-
-
-// //  // string sid2 = (_mc ? "Fall17_17Nov2017_V8_MC" : "Summer16_07Aug2017GH_V5_DATA");
-// //  //  const char *cid2 = sid2.c_str();
-// //  //  const char *a2 = a;
-// //  //  //  const char *s2 = "Summer16_07Aug2017GH_V5";// (13 TeV)";
-// //  //  //  const char *s2s = "07AugV5";
-// //  //  const char *s2 = "Fall17_17Nov2017_V8_MC";// (13 TeV)";
-// //  //  const char *s2s = "17NovV8";
-
-  
-
-//   // // 2016 JEC, 80X
-//   // string sid1 = (_mc ? "Summer16_03Feb2017_V9_MC" : "Summer16_03Feb2017H_V9_DATA");
-//   // const char *cid1 = sid1.c_str();
-//   // const char *a1 = a;
-//   // const char *s1 = "Summer16_03Feb2017H_V9";// (13 TeV)";
-//   // const char *s1s = "03FebV9";
-
-//   // //2016 JEC, previous itteration
-//   // string sid1 = (_mc ? "Summer16_07Aug2017_V3_MC" : "Summer16_07Aug2017GH_V3_DATA");
-//   // const char *cid1 = sid1.c_str();
-//   // const char *a1 = a;
-//   // const char *s1 = "Summer16_07Aug2017GH_V3";// (13 TeV)";
-//   // const char *s1s = "07AugV3";
-
- 
-
-//   // string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_07Aug2017GH_V6_DATA");
-//   // const char *cid1 = sid1.c_str();
-//   // const char *a1 = a;
-//   // //  const char *s1 = "Summer16_07Aug2017GH_V6";// (13 TeV)";
-//   // //  const char *s1s = "07AugV6";
-//   // const char *s1 = "Summer16_23Sep2016V4";// (13 TeV)";
-//   // const char *s1s = "23SepV4";
-
-//   // // // 2016 JEC, 80X
-//   // string sid1 = (_mc ? "Spring16_23Sep2016V2_MC" : "Summer16_03Feb2017H_V9_DATA");
-//   // const char *cid1 = sid1.c_str();
-//   // const char *a1 = a;
-//   // const char *s1 = "Summer16_03Feb2017H_V9";// (13 TeV)";
-//   // const char *s1s = "03Feb";
-
-// // // 2016 80X JEC, Moriond
-// //   string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Fall17_17Nov2017B_V7_DATA");
-// //   const char *cid3 = sid3.c_str();
-// //   const char *a3 = a;
-// //   const char *s3 = "Fall17_17Nov2017B_V7";// (13 TeV)";
-// //   const char *s3s = "17NovV7";
-
-//   // // 2016 80X JEC, Moriond
-//   // string sid3 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_23Sep2016HV4_DATA");
-//   // const char *cid3 = sid3.c_str();
-//   // const char *a3 = a;
-//   // const char *s3 = "Summer16_23Sep2016H_V4";// (13 TeV)";
-//   // const char *s3s = "23SepV4";
 
 
 
@@ -367,13 +363,13 @@ void compareJECversions(string algo="AK4PFchs",
   }
   if (l1) {
   vParam1.push_back(*JetCorPar1L1);
-  cout<<"push back JetCorPar1L1"<<endl;
+  //  cout<<"push back JetCorPar1L1"<<endl;
   }
   if (l2l3){
     vParam1.push_back(*JetCorPar1L2);
-    cout<<"push back JetCorPar1L2"<<endl;
+    //cout<<"push back JetCorPar1L2"<<endl;
     vParam1.push_back(*JetCorPar1L3);
-    cout<<"push back JetCorPar1L3"<<endl;
+    //cout<<"push back JetCorPar1L3"<<endl;
   }
   /* //TEST MC vs DATA   if (l2l3) vParam1.push_back(*JetCorPar1L3); */
   if (res && !mc && JetCorPar1)  vParam1.push_back(*JetCorPar1);
@@ -383,17 +379,17 @@ void compareJECversions(string algo="AK4PFchs",
   cout << str << endl << flush;
   JetCorrectorParameters *JetCorPar2L1RC = new JetCorrectorParameters(str);
   vParam2.push_back(*JetCorPar2L1RC);
-  cout<<"push back JetCorPar2L1RC"<<endl;
+  //  cout<<"push back JetCorPar2L1RC"<<endl;
   }
   if (l1){   
     vParam2.push_back(*JetCorPar2L1);
-    cout<<"push back JetCorPar2L1"<<endl;
+    //    cout<<"push back JetCorPar2L1"<<endl;
   }
   if (l2l3){
     vParam2.push_back(*JetCorPar2L2);
-    cout<<"push back JetCorPar2L2"<<endl;
+    //    cout<<"push back JetCorPar2L2"<<endl;
     vParam2.push_back(*JetCorPar2L3);
-    cout<<"push back JetCorPar2L3"<<endl;
+    //    cout<<"push back JetCorPar2L3"<<endl;
   }
   /* //TEST MC vs DATA   if (l2l3) vParam2.push_back(*JetCorPar2L3); */
   if (res && !mc && JetCorPar2)  vParam2.push_back(*JetCorPar2);
@@ -404,24 +400,6 @@ void compareJECversions(string algo="AK4PFchs",
   FactorizedJetCorrector *JEC3(0);
   JetCorrectionUncertainty *jecUnc3(0);
   if (dothree) {
-    // Note the reversed naming scheme in 2010
-    /*
-    str=Form("JECDatabase/textFiles/%s/%s_%s_L1FastJet.txt",cid3,a3);
-    cout << str << endl << flush;
-    JetCorrectorParameters *JetCorPar3L1 = new JetCorrectorParameters(str);
-    str=Form("JECDatabase/textFiles/%s/%s_%s_L2Relative.txt",cid3,a3);
-    cout << str << endl << flush;
-    JetCorrectorParameters *JetCorPar3L2 = new JetCorrectorParameters(str);
-    str=Form("JECDatabase/textFiles/%s/%s_%s_L3Absolute.txt",cid3,a3);
-    cout << str << endl << flush;
-    JetCorrectorParameters *JetCorPar3L3 = new JetCorrectorParameters(str);
-    str=Form("JECDatabase/textFiles/%s/%s_%s_L2L3Residual.txt",cid3,a3);
-    if (!mc) cout << str << endl << flush;
-    JetCorrectorParameters *JetCorPar3 = (mc ? 0 : new JetCorrectorParameters(str));
-    str=Form("JECDatabase/textFiles/%s/%s_%s_Uncertainty.txt",cid3,a3);
-    cout << str << endl << flush;
-    jecUnc3 = new JetCorrectionUncertainty(str);
-    */
     str=Form("JECDatabase/textFiles/%s/%s_L1FastJet_%s.txt",cid3,cid3,a3);
     cout << str << endl << flush;
     JetCorrectorParameters *JetCorPar3L1 = new JetCorrectorParameters(str);
@@ -459,8 +437,24 @@ void compareJECversions(string algo="AK4PFchs",
   //  TCanvas *c0 = new TCanvas(Form("c0_%s",a),Form("c0_%s",a),600,600);
   //  TCanvas *c2 = new TCanvas(Form("c2_%s",a),Form("c2_%s",a),600,600);
 
+  // const double x_eta[]={-5.191,-4.889,-4.716,-4.538,-4.363,-4.191,-4.013,-3.839,-3.664,-3.489,-3.314,-3.139,-2.964,
+  // 			-2.853, -2.65, -2.5, -2.322, -2.172, -2.043, -1.93, -1.83, -1.74, -1.653, -1.566, -1.479,
+  // 			-1.392, -1.305, -1.218, -1.131, -1.044, -0.957, -0.879, -0.783, -0.696, -0.609, -0.522, -0.435,
+  // 			-0.348, -0.261, -0.174, -0.087, 0.0, 0.087, 0.174, 0.261, 0.348, 0.435, 0.522, 0.609, 0.696,
+  // 			0.783,0.879, 0.957, 1.044, 1.131, 1.218, 1.305, 1.392, 1.479, 1.566, 1.653, 1.74, 1.83, 1.93,
+  // 			2.043, 2.172, 2.322, 2.5, 2.65, 2.853, 2.964, 3.139, 3.314, 3.489, 3.664, 3.839, 4.013, 4.191,
+  // 			4.363, 4.538, 4.716, 4.889, 5.191};
+  const double x_eta[]={0.0, 0.087, 0.174, 0.261, 0.348, 0.435, 0.522, 0.609, 0.696,
+			0.783,0.879, 0.957, 1.044, 1.131, 1.218, 1.305, 1.392, 1.479, 1.566, 1.653, 1.74, 1.83, 1.93,
+			2.043, 2.172, 2.322, 2.5, 2.65, 2.853, 2.964, 3.139, 3.314, 3.489, 3.664, 3.839, 4.013, 4.191,
+			4.363, 4.538, 4.716, 4.889, 5.191};
+
+  const int ndiv_eta = sizeof(x_eta)/sizeof(x_eta[0])-1;//
   TH1D *h = new TH1D(Form("h_%s",a),Form(";|#eta|;%s L2L3 residual",a),
-		     55,0,5.5);
+		    ndiv_eta,x_eta);
+
+  // TH1D *h = new TH1D(Form("h_%s",a),Form(";|#eta|;%s L2L3 residual",a),
+  // 		     55,0,5.5);
   if (_usenegative) h->GetXaxis()->SetTitle("-|#eta|");
   if (_usepositive) h->GetXaxis()->SetTitle("+|#eta|");
 
@@ -480,15 +474,6 @@ void compareJECversions(string algo="AK4PFchs",
  //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4200,4400, 4600, 4800, 5000, 5200, 5400, 7000, 8000};
  //     //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
 
- //normal PU
-  // const double x_pt[] =
-  //   {2, 3, 5, 6, 7, 8, 10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
-  //    97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
-  //    507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
-  //    //_paper ? 1999. : 1890.,
-  //    2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4200,4400, 4600, 4800, 5000, 5200, 5400};
-  //    //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
-
   // //low PU
   // const double x_pt[] =
   //   {10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
@@ -496,12 +481,14 @@ void compareJECversions(string algo="AK4PFchs",
 
   //normal PU
   const double x_pt[] =
-    {10, 12, 15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
+    {10,15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84,
      97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 362, 430,
-     507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,
+     507, 592, 686, 790, 905, 1032, 1172, 1327, 1497, 1684,1800, 
+     1900};
      //_paper ? 1999. : 1890.,
-     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4500, 5000};
+     //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000, 4500, 5000, 10000};
      //     2000, 2238, 2500, 2787, 3103, 3450, 3600, 3800, 4000};
+     
 
 
 
@@ -585,47 +572,47 @@ void compareJECversions(string algo="AK4PFchs",
   TCanvas *c1d30 = tdrCanvas(Form("c1d30_%s",a),hpt,4,11,kSquare);
   if (_paper) hpt->SetTitleOffset(0.97); // comma otherwise cut off
 
-  TGraph *g1a = new TGraph(0);
-  TGraph *g1b = new TGraph(0);
-  TGraph *g1c = new TGraph(0);
-  TGraph *g1d = new TGraph(0);
-  TGraph *g1f = new TGraph(0);
-  TGraph *g1d00 = new TGraph(0);
-  TGraph *g1d40 = new TGraph(0);
-  TGraph *g1d25 = new TGraph(0);
-  TGraph *g1d45 = new TGraph(0);
-  TGraph *g1d48 = new TGraph(0);
-  TGraph *g1d50 = new TGraph(0);
-  TGraph *g1d30 = new TGraph(0);
-  TGraph *g1e = new TGraph(0);
+  TGraphErrors *g1a = new TGraphErrors(0);
+  TGraphErrors *g1b = new TGraphErrors(0);
+  TGraphErrors *g1c = new TGraphErrors(0);
+  TGraphErrors *g1d = new TGraphErrors(0);
+  TGraphErrors *g1f = new TGraphErrors(0);
+  TGraphErrors *g1d00 = new TGraphErrors(0);
+  TGraphErrors *g1d40 = new TGraphErrors(0);
+  TGraphErrors *g1d25 = new TGraphErrors(0);
+  TGraphErrors *g1d45 = new TGraphErrors(0);
+  TGraphErrors *g1d48 = new TGraphErrors(0);
+  TGraphErrors *g1d50 = new TGraphErrors(0);
+  TGraphErrors *g1d30 = new TGraphErrors(0);
+  TGraphErrors *g1e = new TGraphErrors(0);
   //
-  TGraph *g2a = new TGraph(0);
-  TGraph *g2b = new TGraph(0);
-  TGraph *g2c = new TGraph(0);
-  TGraph *g2d = new TGraph(0);
-  TGraph *g2f = new TGraph(0);
-  TGraph *g2d25 = new TGraph(0);
-  TGraph *g2d45 = new TGraph(0);
-  TGraph *g2d00 = new TGraph(0);
-  TGraph *g2d40 = new TGraph(0);
-  TGraph *g2d48 = new TGraph(0);
-  TGraph *g2d50 = new TGraph(0);
-  TGraph *g2d30 = new TGraph(0);
-  TGraph *g2e = new TGraph(0);
+  TGraphErrors *g2a = new TGraphErrors(0);
+  TGraphErrors *g2b = new TGraphErrors(0);
+  TGraphErrors *g2c = new TGraphErrors(0);
+  TGraphErrors *g2d = new TGraphErrors(0);
+  TGraphErrors *g2f = new TGraphErrors(0);
+  TGraphErrors *g2d25 = new TGraphErrors(0);
+  TGraphErrors *g2d45 = new TGraphErrors(0);
+  TGraphErrors *g2d00 = new TGraphErrors(0);
+  TGraphErrors *g2d40 = new TGraphErrors(0);
+  TGraphErrors *g2d48 = new TGraphErrors(0);
+  TGraphErrors *g2d50 = new TGraphErrors(0);
+  TGraphErrors *g2d30 = new TGraphErrors(0);
+  TGraphErrors *g2e = new TGraphErrors(0);
   //
-  TGraph *g3a = new TGraph(0);
-  TGraph *g3b = new TGraph(0);
-  TGraph *g3c = new TGraph(0);
-  TGraph *g3d = new TGraph(0);
-  TGraph *g3f = new TGraph(0);
-  TGraph *g3d25 = new TGraph(0);
-  TGraph *g3d45 = new TGraph(0);
-  TGraph *g3d00 = new TGraph(0);
-  TGraph *g3d40 = new TGraph(0);
-  TGraph *g3d48 = new TGraph(0);
-  TGraph *g3d50 = new TGraph(0);
-  TGraph *g3d30 = new TGraph(0);
-  TGraph *g3e = new TGraph(0);
+  TGraphErrors *g3a = new TGraphErrors(0);
+  TGraphErrors *g3b = new TGraphErrors(0);
+  TGraphErrors *g3c = new TGraphErrors(0);
+  TGraphErrors *g3d = new TGraphErrors(0);
+  TGraphErrors *g3f = new TGraphErrors(0);
+  TGraphErrors *g3d25 = new TGraphErrors(0);
+  TGraphErrors *g3d45 = new TGraphErrors(0);
+  TGraphErrors *g3d00 = new TGraphErrors(0);
+  TGraphErrors *g3d40 = new TGraphErrors(0);
+  TGraphErrors *g3d48 = new TGraphErrors(0);
+  TGraphErrors *g3d50 = new TGraphErrors(0);
+  TGraphErrors *g3d30 = new TGraphErrors(0);
+  TGraphErrors *g3e = new TGraphErrors(0);
   //
   TGraph *g21a = new TGraph(0);
   TGraph *g21b = new TGraph(0);
@@ -638,13 +625,13 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g1c_e = new TGraphErrors(0);
   TGraphErrors *g1d_e = new TGraphErrors(0);
   TGraphErrors *g1f_e = new TGraphErrors(0);
-  TGraphErrors *g1d25_e = new TGraphErrors(0);
-  TGraphErrors *g1d45_e = new TGraphErrors(0);
-  TGraphErrors *g1d40_e = new TGraphErrors(0);
-  TGraphErrors *g1d00_e = new TGraphErrors(0);
-  TGraphErrors *g1d48_e = new TGraphErrors(0);
-  TGraphErrors *g1d50_e = new TGraphErrors(0);
-  TGraphErrors *g1d30_e = new TGraphErrors(0);
+  // TGraphErrors *g1d25_e = new TGraphErrors(0);
+  // TGraphErrors *g1d45_e = new TGraphErrors(0);
+  // TGraphErrors *g1d40_e = new TGraphErrors(0);
+  // TGraphErrors *g1d00_e = new TGraphErrors(0);
+  // TGraphErrors *g1d48_e = new TGraphErrors(0);
+  // TGraphErrors *g1d50_e = new TGraphErrors(0);
+  // TGraphErrors *g1d30_e = new TGraphErrors(0);
   TGraphErrors *g1e_e = new TGraphErrors(0);
   TGraph *g1a_pl = new TGraph(0);
   TGraph *g1a_mn = new TGraph(0);
@@ -656,20 +643,20 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g1d_mn = new TGraph(0);
   TGraph *g1f_pl = new TGraph(0);
   TGraph *g1f_mn = new TGraph(0);
-  TGraph *g1d25_pl = new TGraph(0);
-  TGraph *g1d25_mn = new TGraph(0);
-  TGraph *g1d45_pl = new TGraph(0);
-  TGraph *g1d45_mn = new TGraph(0);
-  TGraph *g1d40_pl = new TGraph(0);
-  TGraph *g1d40_mn = new TGraph(0);
-  TGraph *g1d00_pl = new TGraph(0);
-  TGraph *g1d00_mn = new TGraph(0);
-  TGraph *g1d48_pl = new TGraph(0);
-  TGraph *g1d48_mn = new TGraph(0);
-  TGraph *g1d50_pl = new TGraph(0);
-  TGraph *g1d50_mn = new TGraph(0);
-  TGraph *g1d30_pl = new TGraph(0);
-  TGraph *g1d30_mn = new TGraph(0);
+  // TGraph *g1d25_pl = new TGraph(0);
+  // TGraph *g1d25_mn = new TGraph(0);
+  // TGraph *g1d45_pl = new TGraph(0);
+  // TGraph *g1d45_mn = new TGraph(0);
+  // TGraph *g1d40_pl = new TGraph(0);
+  // TGraph *g1d40_mn = new TGraph(0);
+  // TGraph *g1d00_pl = new TGraph(0);
+  // TGraph *g1d00_mn = new TGraph(0);
+  // TGraph *g1d48_pl = new TGraph(0);
+  // TGraph *g1d48_mn = new TGraph(0);
+  // TGraph *g1d50_pl = new TGraph(0);
+  // TGraph *g1d50_mn = new TGraph(0);
+  // TGraph *g1d30_pl = new TGraph(0);
+  // TGraph *g1d30_mn = new TGraph(0);
   TGraph *g1e_pl = new TGraph(0);
   TGraph *g1e_mn = new TGraph(0);
 
@@ -678,13 +665,13 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g2c_e = new TGraphErrors(0);
   TGraphErrors *g2d_e = new TGraphErrors(0);
   TGraphErrors *g2f_e = new TGraphErrors(0);
-  TGraphErrors *g2d25_e = new TGraphErrors(0);
-  TGraphErrors *g2d30_e = new TGraphErrors(0);
-  TGraphErrors *g2d40_e = new TGraphErrors(0);
-  TGraphErrors *g2d00_e = new TGraphErrors(0);
-  TGraphErrors *g2d45_e = new TGraphErrors(0);
-  TGraphErrors *g2d48_e = new TGraphErrors(0);
-  TGraphErrors *g2d50_e = new TGraphErrors(0);
+  // TGraphErrors *g2d25_e = new TGraphErrors(0);
+  // TGraphErrors *g2d30_e = new TGraphErrors(0);
+  // TGraphErrors *g2d40_e = new TGraphErrors(0);
+  // TGraphErrors *g2d00_e = new TGraphErrors(0);
+  // TGraphErrors *g2d45_e = new TGraphErrors(0);
+  // TGraphErrors *g2d48_e = new TGraphErrors(0);
+  // TGraphErrors *g2d50_e = new TGraphErrors(0);
   TGraphErrors *g2e_e = new TGraphErrors(0);
   TGraph *g2a_pl = new TGraph(0);
   TGraph *g2a_mn = new TGraph(0);
@@ -696,20 +683,20 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g2d_mn = new TGraph(0);
   TGraph *g2f_pl = new TGraph(0);
   TGraph *g2f_mn = new TGraph(0);
-  TGraph *g2d25_pl = new TGraph(0);
-  TGraph *g2d25_mn = new TGraph(0);
-  TGraph *g2d30_pl = new TGraph(0);
-  TGraph *g2d30_mn = new TGraph(0);
-  TGraph *g2d40_pl = new TGraph(0);
-  TGraph *g2d40_mn = new TGraph(0);
-  TGraph *g2d00_pl = new TGraph(0);
-  TGraph *g2d00_mn = new TGraph(0);
-  TGraph *g2d45_pl = new TGraph(0);
-  TGraph *g2d45_mn = new TGraph(0);
-  TGraph *g2d48_pl = new TGraph(0);
-  TGraph *g2d48_mn = new TGraph(0);
-  TGraph *g2d50_pl = new TGraph(0);
-  TGraph *g2d50_mn = new TGraph(0);
+  // TGraph *g2d25_pl = new TGraph(0);
+  // TGraph *g2d25_mn = new TGraph(0);
+  // TGraph *g2d30_pl = new TGraph(0);
+  // TGraph *g2d30_mn = new TGraph(0);
+  // TGraph *g2d40_pl = new TGraph(0);
+  // TGraph *g2d40_mn = new TGraph(0);
+  // TGraph *g2d00_pl = new TGraph(0);
+  // TGraph *g2d00_mn = new TGraph(0);
+  // TGraph *g2d45_pl = new TGraph(0);
+  // TGraph *g2d45_mn = new TGraph(0);
+  // TGraph *g2d48_pl = new TGraph(0);
+  // TGraph *g2d48_mn = new TGraph(0);
+  // TGraph *g2d50_pl = new TGraph(0);
+  // TGraph *g2d50_mn = new TGraph(0);
   TGraph *g2e_pl = new TGraph(0);
   TGraph *g2e_mn = new TGraph(0);
 
@@ -718,13 +705,13 @@ void compareJECversions(string algo="AK4PFchs",
   TGraphErrors *g3c_e = new TGraphErrors(0);
   TGraphErrors *g3d_e = new TGraphErrors(0);
   TGraphErrors *g3f_e = new TGraphErrors(0);
-  TGraphErrors *g3d25_e = new TGraphErrors(0);
-  TGraphErrors *g3d40_e = new TGraphErrors(0);
-  TGraphErrors *g3d00_e = new TGraphErrors(0);
-  TGraphErrors *g3d45_e = new TGraphErrors(0);
-  TGraphErrors *g3d48_e = new TGraphErrors(0);
-  TGraphErrors *g3d50_e = new TGraphErrors(0);
-  TGraphErrors *g3d30_e = new TGraphErrors(0);
+  // TGraphErrors *g3d25_e = new TGraphErrors(0);
+  // TGraphErrors *g3d40_e = new TGraphErrors(0);
+  // TGraphErrors *g3d00_e = new TGraphErrors(0);
+  // TGraphErrors *g3d45_e = new TGraphErrors(0);
+  // TGraphErrors *g3d48_e = new TGraphErrors(0);
+  // TGraphErrors *g3d50_e = new TGraphErrors(0);
+  // TGraphErrors *g3d30_e = new TGraphErrors(0);
   TGraphErrors *g3e_e = new TGraphErrors(0);
   TGraph *g3a_pl = new TGraph(0);
   TGraph *g3a_mn = new TGraph(0);
@@ -736,20 +723,20 @@ void compareJECversions(string algo="AK4PFchs",
   TGraph *g3d_mn = new TGraph(0);
   TGraph *g3f_pl = new TGraph(0);
   TGraph *g3f_mn = new TGraph(0);
-  TGraph *g3d25_pl = new TGraph(0);
-  TGraph *g3d25_mn = new TGraph(0);
-  TGraph *g3d45_pl = new TGraph(0);
-  TGraph *g3d45_mn = new TGraph(0);
-  TGraph *g3d40_pl = new TGraph(0);
-  TGraph *g3d40_mn = new TGraph(0);
-  TGraph *g3d00_pl = new TGraph(0);
-  TGraph *g3d00_mn = new TGraph(0);
-  TGraph *g3d48_pl = new TGraph(0);
-  TGraph *g3d48_mn = new TGraph(0);
-  TGraph *g3d50_pl = new TGraph(0);
-  TGraph *g3d50_mn = new TGraph(0);
-  TGraph *g3d30_pl = new TGraph(0);
-  TGraph *g3d30_mn = new TGraph(0);
+  // TGraph *g3d25_pl = new TGraph(0);
+  // TGraph *g3d25_mn = new TGraph(0);
+  // TGraph *g3d45_pl = new TGraph(0);
+  // TGraph *g3d45_mn = new TGraph(0);
+  // TGraph *g3d40_pl = new TGraph(0);
+  // TGraph *g3d40_mn = new TGraph(0);
+  // TGraph *g3d00_pl = new TGraph(0);
+  // TGraph *g3d00_mn = new TGraph(0);
+  // TGraph *g3d48_pl = new TGraph(0);
+  // TGraph *g3d48_mn = new TGraph(0);
+  // TGraph *g3d50_pl = new TGraph(0);
+  // TGraph *g3d50_mn = new TGraph(0);
+  // TGraph *g3d30_pl = new TGraph(0);
+  // TGraph *g3d30_mn = new TGraph(0);
   TGraph *g3e_pl = new TGraph(0);
   TGraph *g3e_mn = new TGraph(0);
 
@@ -809,285 +796,31 @@ void compareJECversions(string algo="AK4PFchs",
 	  // Asymmetric corrections now
 	  //	  std::cout<<"eta = "<<eta<<std::endl;
 	  //	  std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
-	  double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-	  		    + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	  //	  double y1 = getEtaPtE(JEC1, eta, pt, energy); //TEST
+	  double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta,pt, energy, phi)
+	  		    + getEtaPtE(JEC1, (-1)*eta,pt, energy, phi));
+	  //	  double y1 = getEtaPtE(JEC1, eta,pt, energy, phi); //TEST
 	  // std::cout<<"eta = "<<(+1)*eta<<" "<<(-1)*eta<<std::endl;
-	  double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			    + getEtaPtE(JEC2, (-1)*eta, pt, energy));
+	  double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta,pt, energy, phi)
+			    + getEtaPtE(JEC2, (-1)*eta,pt, energy, phi));
 	  //	  std::cout<<"Point #"<<g21->GetN()<<" eta, R = "<<eta<<", "<<y2/y1<<" y2 = "<<y2<<" y1 = "<<y1<<std::endl;
 	  g21->SetPoint(g21->GetN(), eta, y2/y1);
 	} // energy < 6500
       } // for j
     } // pt bins
+  }
  
     // ***** Pt = 30 
-    {
-      double pt = 30.;
-      double energy = pt*cosh(eta);
-      
-      if (energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	//	cout<<"y1 = "<<y1<<" "<<getEtaPtE(JEC1, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC1, (-1)*eta, pt, energy)<<endl;
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1a->SetPoint(g1a->GetN(), eta, y1);
-	g2a->SetPoint(g2a->GetN(), eta, y2);
-	g3a->SetPoint(g3a->GetN(), eta, y3);
-	g21a->SetPoint(g21a->GetN(),eta, y2/y1);
-	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
-	//
-	g1a_pl->SetPoint(g1a_pl->GetN(), eta, y1*(1+e1));
-	g1a_mn->SetPoint(g1a_mn->GetN(), eta, y1*(1-e1));
-	g1a_e->SetPoint(i-1, eta, y1);
-	g1a_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2a_pl->SetPoint(g2a_pl->GetN(), eta, y2*(1+e2));
-	g2a_mn->SetPoint(g2a_mn->GetN(), eta, y2*(1-e2));
-	g2a_e->SetPoint(i-1, eta, y2);
-	g2a_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3a_pl->SetPoint(g3a_pl->GetN(), eta, y3*(1+e3));
-	g3a_mn->SetPoint(g3a_mn->GetN(), eta, y3*(1-e3));
-	g3a_e->SetPoint(i-1, eta, y3);
-	g3a_e->SetPointError(i-1, 0., y3*e3);
-      }
-    }
-
+    bool isFill_pt30 = FillCorrectionGraph_eta(30.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1a, g2a, g3a); 
     // ***** Pt = 100 
-    {
-      double pt = 100.;
-      double energy = pt*cosh(eta);
-      
-      if (energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			 + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			 + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-			       + getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1b->SetPoint(g1b->GetN(), eta, y1);
-	g2b->SetPoint(g2b->GetN(), eta, y2);
-	g3b->SetPoint(g3b->GetN(), eta, y3);
-	g21b->SetPoint(g21b->GetN(),eta, y2/y1);
-	//	std::cout<<"g21b->GetN() = "<<g21b->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
-	//
-	g1b_pl->SetPoint(g1b_pl->GetN(), eta, y1*(1+e1));
-	g1b_mn->SetPoint(g1b_mn->GetN(), eta, y1*(1-e1));
-	g1b_e->SetPoint(i-1, eta, y1);
-	g1b_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2b_pl->SetPoint(g2b_pl->GetN(), eta, y2*(1+e2));
-	g2b_mn->SetPoint(g2b_mn->GetN(), eta, y2*(1-e2));
-	g2b_e->SetPoint(i-1, eta, y2);
-	g2b_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3b_pl->SetPoint(g3b_pl->GetN(), eta, y3*(1+e3));
-	g3b_mn->SetPoint(g3b_mn->GetN(), eta, y3*(1-e3));
-	g3b_e->SetPoint(i-1, eta, y3);
-	g3b_e->SetPointError(i-1, 0., y3*e3);
-      }
-    }
-
-
-
+    bool isFill_pt100 = FillCorrectionGraph_eta(100.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1b, g2b, g3b); 
     // ***** Pt = 1000
-    {
-      double pt = 1000.;
-      double energy = pt*cosh(eta);
-      
-      if (energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			 + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			 + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-			       + getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1c->SetPoint(g1c->GetN(), eta, y1);
-	g2c->SetPoint(g2c->GetN(), eta, y2);
-	g3c->SetPoint(g3c->GetN(), eta, y3);
-	g21c->SetPoint(g21c->GetN(),eta, y2/y1);
-	//	std::cout<<"g21c->GetN() = "<<g21c->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
-	//
-	g1c_pl->SetPoint(g1c_pl->GetN(), eta, y1*(1+e1));
-	g1c_mn->SetPoint(g1c_mn->GetN(), eta, y1*(1-e1));
-	g1c_e->SetPoint(i-1, eta, y1);
-	g1c_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2c_pl->SetPoint(g2c_pl->GetN(), eta, y2*(1+e2));
-	g2c_mn->SetPoint(g2c_mn->GetN(), eta, y2*(1-e2));
-	g2c_e->SetPoint(i-1, eta, y2);
-	g2c_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3c_pl->SetPoint(g3c_pl->GetN(), eta, y3*(1+e3));
-	g3c_mn->SetPoint(g3c_mn->GetN(), eta, y3*(1-e3));
-	g3c_e->SetPoint(i-1, eta, y3);
-	g3c_e->SetPointError(i-1, 0., y3*e3);
-      }
-    }
-
- // ***** Pt = 400
-    {
-      double pt = 400.;
-      double energy = pt*cosh(eta);
-      
-      if (energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			 + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			 + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-			       + getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1f->SetPoint(g1f->GetN(), eta, y1);
-	g2f->SetPoint(g2f->GetN(), eta, y2);
-	g3f->SetPoint(g3f->GetN(), eta, y3);
-	g21f->SetPoint(g21f->GetN(),eta, y2/y1);
-	//	std::cout<<"g21c->GetN() = "<<g21c->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
-	//
-	g1f_pl->SetPoint(g1f_pl->GetN(), eta, y1*(1+e1));
-	g1f_mn->SetPoint(g1f_mn->GetN(), eta, y1*(1-e1));
-	g1f_e->SetPoint(i-1, eta, y1);
-	g1f_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2f_pl->SetPoint(g2f_pl->GetN(), eta, y2*(1+e2));
-	g2f_mn->SetPoint(g2f_mn->GetN(), eta, y2*(1-e2));
-	g2f_e->SetPoint(i-1, eta, y2);
-	g2f_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3f_pl->SetPoint(g3f_pl->GetN(), eta, y3*(1+e3));
-	g3f_mn->SetPoint(g3f_mn->GetN(), eta, y3*(1-e3));
-	g3f_e->SetPoint(i-1, eta, y3);
-	g3f_e->SetPointError(i-1, 0., y3*e3);
-      }
-    }
-
-    // ***** E = 1000 
-    {
-      double energy = 1000.;
-      double pt = energy/cosh(eta);
-     
-      if (pt > 1.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1e->SetPoint(g1e->GetN(), eta, y1);
-	g2e->SetPoint(g2e->GetN(), eta, y2);
-	g3e->SetPoint(g3e->GetN(), eta, y3);
-	g21e->SetPoint(g21e->GetN(),eta, y2/y1);
-	//
-	g1e_pl->SetPoint(g1e_pl->GetN(), eta, y1*(1+e1));
-	g1e_mn->SetPoint(g1e_mn->GetN(), eta, y1*(1-e1));
-	g1e_e->SetPoint(i-1, eta, y1);
-	g1e_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2e_pl->SetPoint(g2e_pl->GetN(), eta, y2*(1+e2));
-	g2e_mn->SetPoint(g2e_mn->GetN(), eta, y2*(1-e2));
-	g2e_e->SetPoint(i-1, eta, y2);
-	g2e_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3e_pl->SetPoint(g3e_pl->GetN(), eta, y3*(1+e3));
-	g3e_mn->SetPoint(g3e_mn->GetN(), eta, y3*(1-e3));
-	g3e_e->SetPoint(i-1, eta, y3);
-	g3e_e->SetPointError(i-1, 0., y3*e3);
-      }
-    }
-  } // for i
+    bool isFill_pt1000 = FillCorrectionGraph_eta(1000.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1c, g2c, g3c); 
+    // ***** Pt = 400
+    bool isFill_pt400 = FillCorrectionGraph_eta(400.0,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1f, g2f, g3f); 
+    // // ***** E = 1000 
+    // double energy = 1000.;
+    // double pt = energy/cosh(eta);
+    // bool isFill_E1000 = FillCorrectionGraph_eta(pt,0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, h, g1e, g2e, g3e); 
 
   for (int i = 1; i != hpt->GetNbinsX()+1; ++i) {
 
@@ -1106,24 +839,24 @@ void compareJECversions(string algo="AK4PFchs",
       
       if (pt>1 && energy < 6500.) {
 	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, +eta, pt, energy)
-			  + getEtaPtE(JEC1, -eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, +eta, pt, energy)
-			  + getEtaPtE(JEC2, -eta, pt, energy));
+	double y1 = 0.5*(getEtaPtE(JEC1, +eta,pt, energy, phi)
+			  + getEtaPtE(JEC1, -eta,pt, energy, phi));
+	double y2 = 0.5*(getEtaPtE(JEC2, +eta,pt, energy, phi)
+			  + getEtaPtE(JEC2, -eta,pt, energy, phi));
 	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta, pt, energy)
-				+ getEtaPtE(JEC3, -eta, pt, energy));
+	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, +eta,pt, energy, phi)
+				+ getEtaPtE(JEC3, -eta,pt, energy, phi));
 	// negative side
 	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, -eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, -eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, -eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, -eta,pt, energy, phi);
+	  y2 = getEtaPtE(JEC2, -eta,pt, energy, phi);
+	  y3 = (dothree ? getEtaPtE(JEC3, -eta,pt, energy, phi) : 0);
 	}
 	// positive side
 	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, +eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, +eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, +eta, pt, energy) : 0);
+	  y1 = getEtaPtE(JEC1, +eta,pt, energy, phi);
+	  y2 = getEtaPtE(JEC2, +eta,pt, energy, phi);
+	  y3 = (dothree ? getEtaPtE(JEC3, +eta,pt, energy, phi) : 0);
 	}
 	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
 	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
@@ -1138,455 +871,42 @@ void compareJECversions(string algo="AK4PFchs",
 	++nsum;
       } // pt>ptmin && e<emax
     } // for j
+    int i_point = g1d->GetN();
+    g1d->SetPoint(i_point, pt, sumy1);
+    g2d->SetPoint(i_point, pt, sumy2);
+    g3d->SetPoint(i_point, pt, sumy3);
 
-    g1d->SetPoint(g1d->GetN(), pt, sumy1);
-    g2d->SetPoint(g2d->GetN(), pt, sumy2);
-    g3d->SetPoint(g3d->GetN(), pt, sumy3);
-    //
-    g1d_pl->SetPoint(g1d_pl->GetN(), pt, sumy1*(1+sume1));
-    g1d_mn->SetPoint(g1d_mn->GetN(), pt, sumy1*(1-sume1));
-    g1d_e->SetPoint(i-1, pt, sumy1);
-    g1d_e->SetPointError(i-1, 0., sumy1*sume1);
-    //
-    g2d_pl->SetPoint(g2d_pl->GetN(), pt, sumy2*(1+sume2));
-    g2d_mn->SetPoint(g2d_mn->GetN(), pt, sumy2*(1-sume2));
-    g2d_e->SetPoint(i-1, pt, sumy2);
-    g2d_e->SetPointError(i-1, 0., sumy2*sume2);
-    //
-    g3d_pl->SetPoint(g3d_pl->GetN(), pt, sumy3*(1+sume3));
-    g3d_mn->SetPoint(g3d_mn->GetN(), pt, sumy3*(1-sume3));
-    g3d_e->SetPoint(i-1, pt, sumy3);
-    g3d_e->SetPointError(i-1, 0., sumy3*sume3);
-    //  } // *** Eta = 0 => |eta|<1.3
+    g1d->SetPointError(i_point, 0, sume1);
+    g2d->SetPointError(i_point, 0, sume2);
+    g3d->SetPointError(i_point, 0, sume3);
 
+    // //
+    // g1d_pl->SetPoint(g1d_pl->GetN(), pt, sumy1*(1+sume1));
+    // g1d_mn->SetPoint(g1d_mn->GetN(), pt, sumy1*(1-sume1));
+    // g1d_e->SetPoint(i-1, pt, sumy1);
+    // g1d_e->SetPointError(i-1, 0., sumy1*sume1);
+    // //
+    // g2d_pl->SetPoint(g2d_pl->GetN(), pt, sumy2*(1+sume2));
+    // g2d_mn->SetPoint(g2d_mn->GetN(), pt, sumy2*(1-sume2));
+    // g2d_e->SetPoint(i-1, pt, sumy2);
+    // g2d_e->SetPointError(i-1, 0., sumy2*sume2);
+    // //
+    // g3d_pl->SetPoint(g3d_pl->GetN(), pt, sumy3*(1+sume3));
+    // g3d_mn->SetPoint(g3d_mn->GetN(), pt, sumy3*(1-sume3));
+    // g3d_e->SetPoint(i-1, pt, sumy3);
+    // g3d_e->SetPointError(i-1, 0., sumy3*sume3);
+  } // *** Eta = 0 => |eta|<1.3
 
-
-    /*    // ***** Eta = 0 
-    {
-      double eta = 0.;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d->SetPoint(g1d->GetN(), pt, y1);
-	g2d->SetPoint(g2d->GetN(), pt, y2);
-	g3d->SetPoint(g3d->GetN(), pt, y3);
-	//
-	g1d_pl->SetPoint(g1d_pl->GetN(), pt, y1*(1+e1));
-	g1d_mn->SetPoint(g1d_mn->GetN(), pt, y1*(1-e1));
-	g1d_e->SetPoint(i-1, pt, y1);
-	g1d_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d_pl->SetPoint(g2d_pl->GetN(), pt, y2*(1+e2));
-	g2d_mn->SetPoint(g2d_mn->GetN(), pt, y2*(1-e2));
-	g2d_e->SetPoint(i-1, pt, y2);
-	g2d_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d_pl->SetPoint(g3d_pl->GetN(), pt, y3*(1+e3));
-	g3d_mn->SetPoint(g3d_mn->GetN(), pt, y3*(1-e3));
-	g3d_e->SetPoint(i-1, pt, y3);
-	g3d_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 0 */
-
- // ***** Eta = 2.5
-    {
-      double eta = 2.5;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d25->SetPoint(g1d25->GetN(), pt, y1);
-	g2d25->SetPoint(g2d25->GetN(), pt, y2);
-	g3d25->SetPoint(g3d25->GetN(), pt, y3);
-	//
-	g1d25_pl->SetPoint(g1d25_pl->GetN(), pt, y1*(1+e1));
-	g1d25_mn->SetPoint(g1d25_mn->GetN(), pt, y1*(1-e1));
-	g1d25_e->SetPoint(i-1, pt, y1);
-	g1d25_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d25_pl->SetPoint(g2d25_pl->GetN(), pt, y2*(1+e2));
-	g2d25_mn->SetPoint(g2d25_mn->GetN(), pt, y2*(1-e2));
-	g2d25_e->SetPoint(i-1, pt, y2);
-	g2d25_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d25_pl->SetPoint(g3d25_pl->GetN(), pt, y3*(1+e3));
-	g3d25_mn->SetPoint(g3d25_mn->GetN(), pt, y3*(1-e3));
-	g3d25_e->SetPoint(i-1, pt, y3);
-	g3d25_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 2.5
-
-    // ***** Eta = 4.5
-    {
-      double eta = 4.5;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d45->SetPoint(g1d45->GetN(), pt, y1);
-	g2d45->SetPoint(g2d45->GetN(), pt, y2);
-	g3d45->SetPoint(g3d45->GetN(), pt, y3);
-	//
-	g1d45_pl->SetPoint(g1d45_pl->GetN(), pt, y1*(1+e1));
-	g1d45_mn->SetPoint(g1d45_mn->GetN(), pt, y1*(1-e1));
-	g1d45_e->SetPoint(i-1, pt, y1);
-	g1d45_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d45_pl->SetPoint(g2d45_pl->GetN(), pt, y2*(1+e2));
-	g2d45_mn->SetPoint(g2d45_mn->GetN(), pt, y2*(1-e2));
-	g2d45_e->SetPoint(i-1, pt, y2);
-	g2d45_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d45_pl->SetPoint(g3d45_pl->GetN(), pt, y3*(1+e3));
-	g3d45_mn->SetPoint(g3d45_mn->GetN(), pt, y3*(1-e3));
-	g3d45_e->SetPoint(i-1, pt, y3);
-	g3d45_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 4.5
-
- // ***** Eta = 4.0
-    {
-      double eta = 4.0;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d40->SetPoint(g1d40->GetN(), pt, y1);
-	g2d40->SetPoint(g2d40->GetN(), pt, y2);
-	g3d40->SetPoint(g3d40->GetN(), pt, y3);
-	//
-	g1d40_pl->SetPoint(g1d40_pl->GetN(), pt, y1*(1+e1));
-	g1d40_mn->SetPoint(g1d40_mn->GetN(), pt, y1*(1-e1));
-	g1d40_e->SetPoint(i-1, pt, y1);
-	g1d40_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d40_pl->SetPoint(g2d40_pl->GetN(), pt, y2*(1+e2));
-	g2d40_mn->SetPoint(g2d40_mn->GetN(), pt, y2*(1-e2));
-	g2d40_e->SetPoint(i-1, pt, y2);
-	g2d40_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d40_pl->SetPoint(g3d40_pl->GetN(), pt, y3*(1+e3));
-	g3d40_mn->SetPoint(g3d40_mn->GetN(), pt, y3*(1-e3));
-	g3d40_e->SetPoint(i-1, pt, y3);
-	g3d40_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 4.0
+    bool isFine_00 = FillCorrectionGraph_pt(0.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d00, g2d00, g3d00);   
+    bool isFine_25 = FillCorrectionGraph_pt(2.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d25, g2d25, g3d25);   
+    bool isFine_29 = FillCorrectionGraph_pt(2.9, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d30, g2d30, g3d30);   
+    bool isFine_40 = FillCorrectionGraph_pt(4.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d40, g2d40, g3d40);   
+    bool isFine_45 = FillCorrectionGraph_pt(4.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d45, g2d45, g3d45);   
+    bool isFine_48 = FillCorrectionGraph_pt(4.8, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d48, g2d48, g3d48);   
+    bool isFine_50 = FillCorrectionGraph_pt(5.0, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d50, g2d50, g3d50);   
+    //    bool isFine_25 = FillCorrectionGraph_pt(2.5, 0, JEC1, JEC2, JEC3, jecUnc1, jecUnc2, jecUnc3,dothree, _usenegative, _usepositive, hpt, g1d25, g2d25, g3d25, g1d25_pl, g1d25_mn, g1d25_e, g2d25_pl, g2d25_mn, g2d25_e, g3d25_pl, g3d25_mn, g3d25_e);   
 
 
- // ***** Eta = 0.0
-    {
-      double eta = 0.0;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d00->SetPoint(g1d00->GetN(), pt, y1);
-	g2d00->SetPoint(g2d00->GetN(), pt, y2);
-	g3d00->SetPoint(g3d00->GetN(), pt, y3);
-	//
-	g1d00_pl->SetPoint(g1d00_pl->GetN(), pt, y1*(1+e1));
-	g1d00_mn->SetPoint(g1d00_mn->GetN(), pt, y1*(1-e1));
-	g1d00_e->SetPoint(i-1, pt, y1);
-	g1d00_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d00_pl->SetPoint(g2d00_pl->GetN(), pt, y2*(1+e2));
-	g2d00_mn->SetPoint(g2d00_mn->GetN(), pt, y2*(1-e2));
-	g2d00_e->SetPoint(i-1, pt, y2);
-	g2d00_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d00_pl->SetPoint(g3d00_pl->GetN(), pt, y3*(1+e3));
-	g3d00_mn->SetPoint(g3d00_mn->GetN(), pt, y3*(1-e3));
-	g3d00_e->SetPoint(i-1, pt, y3);
-	g3d00_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 0.0
-
-
-// ***** Eta = 4.8
-    {
-      double eta = 4.8;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d48->SetPoint(g1d48->GetN(), pt, y1);
-	g2d48->SetPoint(g2d48->GetN(), pt, y2);
-	g3d48->SetPoint(g3d48->GetN(), pt, y3);
-	//
-	g1d48_pl->SetPoint(g1d48_pl->GetN(), pt, y1*(1+e1));
-	g1d48_mn->SetPoint(g1d48_mn->GetN(), pt, y1*(1-e1));
-	g1d48_e->SetPoint(i-1, pt, y1);
-	g1d48_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d48_pl->SetPoint(g2d48_pl->GetN(), pt, y2*(1+e2));
-	g2d48_mn->SetPoint(g2d48_mn->GetN(), pt, y2*(1-e2));
-	g2d48_e->SetPoint(i-1, pt, y2);
-	g2d48_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d48_pl->SetPoint(g3d48_pl->GetN(), pt, y3*(1+e3));
-	g3d48_mn->SetPoint(g3d48_mn->GetN(), pt, y3*(1-e3));
-	g3d48_e->SetPoint(i-1, pt, y3);
-	g3d48_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 4.8
-
-
-// ***** Eta = 5.0
-    {
-      double eta = 5.0;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d50->SetPoint(g1d50->GetN(), pt, y1);
-	g2d50->SetPoint(g2d50->GetN(), pt, y2);
-	g3d50->SetPoint(g3d50->GetN(), pt, y3);
-	//
-	g1d50_pl->SetPoint(g1d50_pl->GetN(), pt, y1*(1+e1));
-	g1d50_mn->SetPoint(g1d50_mn->GetN(), pt, y1*(1-e1));
-	g1d50_e->SetPoint(i-1, pt, y1);
-	g1d50_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d50_pl->SetPoint(g2d50_pl->GetN(), pt, y2*(1+e2));
-	g2d50_mn->SetPoint(g2d50_mn->GetN(), pt, y2*(1-e2));
-	g2d50_e->SetPoint(i-1, pt, y2);
-	g2d50_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d50_pl->SetPoint(g3d50_pl->GetN(), pt, y3*(1+e3));
-	g3d50_mn->SetPoint(g3d50_mn->GetN(), pt, y3*(1-e3));
-	g3d50_e->SetPoint(i-1, pt, y3);
-	g3d50_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 5.0
-
-    // ***** Eta = 3.0
-    {
-      double eta = 2.9;
-      double pt = hpt->GetBinCenter(i);
-      double energy = pt*cosh(eta);
-      
-      if (pt>1 && energy < 6500.) {
-	// Asymmetric corrections now
-	double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
-	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
-			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-	double y3(0);
-	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
-				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
-	// negative side
-	if (_usenegative) {
-	  y1 = getEtaPtE(JEC1, (-1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (-1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (-1)*eta, pt, energy) : 0);
-	}
-	// positive side
-	if (_usepositive) {
-	  y1 = getEtaPtE(JEC1, (+1)*eta, pt, energy);
-	  y2 = getEtaPtE(JEC2, (+1)*eta, pt, energy);
-	  y3 = (dothree ? getEtaPtE(JEC3, (+1)*eta, pt, energy) : 0);
-	}
-	double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);
-	double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);
-	double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
-	
-	g1d30->SetPoint(g1d30->GetN(), pt, y1);
-	g2d30->SetPoint(g2d30->GetN(), pt, y2);
-	g3d30->SetPoint(g3d30->GetN(), pt, y3);
-	//
-	g1d30_pl->SetPoint(g1d30_pl->GetN(), pt, y1*(1+e1));
-	g1d30_mn->SetPoint(g1d30_mn->GetN(), pt, y1*(1-e1));
-	g1d30_e->SetPoint(i-1, pt, y1);
-	g1d30_e->SetPointError(i-1, 0., y1*e1);
-	//
-	g2d30_pl->SetPoint(g2d30_pl->GetN(), pt, y2*(1+e2));
-	g2d30_mn->SetPoint(g2d30_mn->GetN(), pt, y2*(1-e2));
-	g2d30_e->SetPoint(i-1, pt, y2);
-	g2d30_e->SetPointError(i-1, 0., y2*e2);
-	//
-	g3d30_pl->SetPoint(g3d30_pl->GetN(), pt, y3*(1+e3));
-	g3d30_mn->SetPoint(g3d30_mn->GetN(), pt, y3*(1-e3));
-	g3d30_e->SetPoint(i-1, pt, y3);
-	g3d30_e->SetPointError(i-1, 0., y3*e3);
-      }
-    } // *** Eta = 3.0
-
-
-  } // for i
 
   // Generic legend
   //TLegend *leg = new TLegend(0.20,dothree ? 0.70 : 0.75,0.40,0.85,"","brNDC");
@@ -1599,86 +919,88 @@ void compareJECversions(string algo="AK4PFchs",
   //leg->Draw();
 
   // For legends
-  g3a->SetFillStyle(3003);
-  g3a->SetFillColor(kGreen+2);
-  g3b->SetFillStyle(3003);
-  g3b->SetFillColor(kGreen+2);
-  g3c->SetFillStyle(3003);
-  g3c->SetFillColor(kGreen+2);
-  g3d->SetFillStyle(3003);
-  g3d->SetFillColor(kGreen+2);
-  g3f->SetFillStyle(3003);
-  g3f->SetFillColor(kGreen+2);
-  g3d25->SetFillStyle(3003);
-  g3d25->SetFillColor(kGreen+2);
-  g3d45->SetFillStyle(3003);
-  g3d45->SetFillColor(kGreen+2);
-  g3d40->SetFillStyle(3003);
-  g3d40->SetFillColor(kGreen+2);
-  g3d00->SetFillStyle(3003);
-  g3d00->SetFillColor(kGreen+2);
-  g3d48->SetFillStyle(3003);
-  g3d48->SetFillColor(kGreen+2);
-  g3d50->SetFillStyle(3003);
-  g3d50->SetFillColor(kGreen+2);
-  g3d30->SetFillStyle(3003);
-  g3d30->SetFillColor(kGreen+2);
-  g3e->SetFillStyle(3003);
-  g3e->SetFillColor(kGreen+2);
+    //  g3a->SetFillStyle(3003);
+  g3a->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3b->SetFillStyle(3003);
+  g3b->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3c->SetFillStyle(3003);
+  g3c->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d->SetFillStyle(3003);
+  g3d->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3f->SetFillStyle(3003);
+  g3f->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d25->SetFillStyle(3003);
+  g3d25->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d45->SetFillStyle(3003);
+  g3d45->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d40->SetFillStyle(3003);
+  g3d40->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d00->SetFillStyle(3003);
+  g3d00->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d48->SetFillStyle(3003);
+  g3d48->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d50->SetFillStyle(3003);
+  g3d50->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3d30->SetFillStyle(3003);
+  g3d30->SetFillColorAlpha(kGreen+2,0.05);
+  //  g3e->SetFillStyle(3003);
+  g3e->SetFillColorAlpha(kGreen+2,0.05);
 
-  g1a->SetFillStyle(3003);
-  g1a->SetFillColor(kBlue);
-  g1b->SetFillStyle(3003);
-  g1b->SetFillColor(kBlue);
-  g1c->SetFillStyle(3003);
-  g1c->SetFillColor(kBlue);
-  g1d->SetFillStyle(3003);
-  g1d->SetFillColor(kBlue);
-  g1f->SetFillStyle(3003);
-  g1f->SetFillColor(kBlue);
-  g1d25->SetFillStyle(3003);
-  g1d25->SetFillColor(kBlue);
-  g1d45->SetFillStyle(3003);
-  g1d45->SetFillColor(kBlue);
-  g1d40->SetFillStyle(3003);
-  g1d40->SetFillColor(kBlue);
-  g1d00->SetFillStyle(3003);
-  g1d00->SetFillColor(kBlue);
-  g1d48->SetFillStyle(3003);
-  g1d48->SetFillColor(kBlue);
-  g1d50->SetFillStyle(3003);
-  g1d50->SetFillColor(kBlue);
-  g1d30->SetFillStyle(3003);
-  g1d30->SetFillColor(kBlue);
-  g1e->SetFillStyle(3003);
-  g1e->SetFillColor(kBlue);
+  //  g1a->SetFillStyle(3003);
+  g1a->SetFillColorAlpha(kBlue,0.1);
+  //  g1b->SetFillStyle(3003);
+  g1b->SetFillColorAlpha(kBlue,0.1);
+  //  g1c->SetFillStyle(3003);
+  g1c->SetFillColorAlpha(kBlue,0.1);
+  //  g1d->SetFillStyle(3003);
+  g1d->SetFillColorAlpha(kBlue,0.1);
+  //  g1f->SetFillStyle(3003);
+  g1f->SetFillColorAlpha(kBlue,0.1);
+  //g1d25->SetFillStyle(3003);
+  //  g1d25->SetFillColorAlpha(kBlue,0.1);
+  g1d25->SetFillColorAlpha(kBlue,0.2);
+  //  g1d45->SetFillStyle(3003);
+  g1d45->SetFillColorAlpha(kBlue,0.1);
+  //  g1d40->SetFillStyle(3003);
+  g1d40->SetFillColorAlpha(kBlue,0.1);
+  //  g1d00->SetFillStyle(3003);
+  g1d00->SetFillColorAlpha(kBlue,0.1);
+  //  g1d48->SetFillStyle(3003);
+  g1d48->SetFillColorAlpha(kBlue,0.1);
+  //  g1d50->SetFillStyle(3003);
+  g1d50->SetFillColorAlpha(kBlue,0.1);
+  //  g1d30->SetFillStyle(3003);
+  g1d30->SetFillColorAlpha(kBlue,0.1);
+  //  g1e->SetFillStyle(3003);
+  g1e->SetFillColorAlpha(kBlue,0.1);
 
-  g2a->SetFillStyle(3003);
-  g2a->SetFillColor(kRed);
-  g2b->SetFillStyle(3003);
-  g2b->SetFillColor(kRed);
-  g2c->SetFillStyle(3003);
-  g2c->SetFillColor(kRed);
-  g2d->SetFillStyle(3003);
-  g2d->SetFillColor(kRed);
-  g2f->SetFillStyle(3003);
-  g2f->SetFillColor(kRed);
-  g2d25->SetFillStyle(3003);
-  g2d25->SetFillColor(kRed);
-  g2d45->SetFillStyle(3003);
-  g2d45->SetFillColor(kRed);
-  g2d40->SetFillStyle(3003);
-  g2d40->SetFillColor(kRed);
-  g2d00->SetFillStyle(3003);
-  g2d00->SetFillColor(kRed);
-  g2d48->SetFillStyle(3003);
-  g2d48->SetFillColor(kRed);
-  g2d50->SetFillStyle(3003);
-  g2d50->SetFillColor(kRed);
-  g2d30->SetFillStyle(3003);
-  g2d30->SetFillColor(kRed);
-  g2e->SetFillStyle(3003);
-  g2e->SetFillColor(kRed);
+  //  g2a->SetFillStyle(3003);
+  g2a->SetFillColorAlpha(kRed,0.15);
+  //  g2b->SetFillStyle(3003);
+  g2b->SetFillColorAlpha(kRed,0.15);
+  //  g2c->SetFillStyle(3003);
+  g2c->SetFillColorAlpha(kRed,0.15);
+  //  g2d->SetFillStyle(3003);
+  g2d->SetFillColorAlpha(kRed,0.15);
+  //  g2f->SetFillStyle(3003);
+  g2f->SetFillColorAlpha(kRed,0.15);
+  //  g2d25->SetFillStyle(3003);
+  //  g2d25->SetFillColorAlpha(kRed,0.15);
+  g2d25->SetFillColorAlpha(kRed,0.15);
+  //  g2d45->SetFillStyle(3003);
+  g2d45->SetFillColorAlpha(kRed,0.15);
+  //  g2d40->SetFillStyle(3003);
+  g2d40->SetFillColorAlpha(kRed,0.15);
+  //  g2d00->SetFillStyle(3003);
+  g2d00->SetFillColorAlpha(kRed,0.15);
+  //  g2d48->SetFillStyle(3003);
+  g2d48->SetFillColorAlpha(kRed,0.15);
+  //  g2d50->SetFillStyle(3003);
+  g2d50->SetFillColorAlpha(kRed,0.15);
+  //  g2d30->SetFillStyle(3003);
+  g2d30->SetFillColorAlpha(kRed,0.15);
+  //  g2e->SetFillStyle(3003);
+  g2e->SetFillColorAlpha(kRed,0.15);
   
   TLatex *tex = new TLatex();
   tex->SetNDC();
@@ -1701,54 +1023,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1a->cd();
     //    h->DrawClone("AXIS");
 
-    if (dothree) {
-      g3a_e->SetFillStyle(3003);
-      g3a_e->SetFillColor(kGreen+2);
-      g3a_e->Draw("SAME E3");
-      g3a_pl->SetLineColor(kGreen-9);
-      g3a_pl->SetLineStyle(kSolid);//kDotted);
-      g3a_pl->Draw("SAMEL");
-      g3a_mn->SetLineColor(kGreen-9);
-      g3a_mn->SetLineStyle(kSolid);//kDotted);
-      g3a_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   //      g3a_e->SetFillStyle(3003);
+    //   g3a_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3a_e->Draw("SAME E3");
+    //   g3a_pl->SetLineColor(kGreen-9);
+    //   g3a_pl->SetLineStyle(kSolid);//kDotted);
+    //   g3a_pl->Draw("SAMEL");
+    //   g3a_mn->SetLineColor(kGreen-9);
+    //   g3a_mn->SetLineStyle(kSolid);//kDotted);
+    //   g3a_mn->Draw("SAMEL");
+    // }
 
-    g1a_e->SetFillStyle(3003);
-    g1a_e->SetFillColor(kBlue);
-    g1a_e->Draw("SAME E3");
-    g1a_pl->SetLineColor(kBlue-9);
-    g1a_pl->SetLineStyle(kSolid);//kDotted);
-    g1a_pl->Draw("SAMEL");
-    g1a_mn->SetLineColor(kBlue-9);
-    g1a_mn->SetLineStyle(kSolid);//kDotted);
-    g1a_mn->Draw("SAMEL");
+    // //    g1a_e->SetFillStyle(3003);
+    // g1a_e->SetFillColorAlpha(kBlue,0.1);
+    // g1a_e->Draw("SAME E3");
+    // g1a_pl->SetLineColor(kBlue-9);
+    // g1a_pl->SetLineStyle(kSolid);//kDotted);
+    // g1a_pl->Draw("SAMEL");
+    // g1a_mn->SetLineColor(kBlue-9);
+    // g1a_mn->SetLineStyle(kSolid);//kDotted);
+    // g1a_mn->Draw("SAMEL");
 
-    g2a_e->SetFillStyle(3003);
-    g2a_e->SetFillColor(kRed);
-    g2a_e->Draw("SAME E3");
-    g2a_pl->SetLineColor(kRed-9);
-    g2a_pl->SetLineStyle(kSolid);//kDotted);
-    g2a_pl->Draw("SAMEL");
-    g2a_mn->SetLineColor(kRed-9);
-    g2a_mn->SetLineStyle(kSolid);//kDotted);
-    g2a_mn->Draw("SAMEL");
+    // //    g2a_e->SetFillStyle(3003);
+    // g2a_e->SetFillColorAlpha(kRed,0.15);
+    // g2a_e->Draw("SAME E3");
+    // g2a_pl->SetLineColor(kRed-9);
+    // g2a_pl->SetLineStyle(kSolid);//kDotted);
+    // g2a_pl->Draw("SAMEL");
+    // g2a_mn->SetLineColor(kRed-9);
+    // g2a_mn->SetLineStyle(kSolid);//kDotted);
+    // g2a_mn->Draw("SAMEL");
         
     if (dothree) {
       g3a->SetMarkerStyle(kOpenSquare);
       g3a->SetMarkerColor(kGreen+2);
       g3a->SetLineColor(kGreen+2);
-      g3a->Draw("SAMEPL");
+      g3a->Draw("SAMEPL4");
     }
 
     g1a->SetMarkerStyle(kFullSquare);
     g1a->SetMarkerColor(kBlue);
     g1a->SetLineColor(kBlue);
-    g1a->Draw("SAMEPL");
+    g1a->Draw("SAMEPL4");
 
     g2a->SetMarkerStyle(kFullCircle);
     g2a->SetMarkerColor(kRed);
     g2a->SetLineColor(kRed);
-    g2a->Draw("SAMEPL");
+    g2a->Draw("SAMEPL4");
 
     //tex->DrawLatex(0.20,0.88,Form("p_{T,%s} = 30 GeV%s, %s",cgen,
     //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
@@ -1779,54 +1101,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1b->cd();
     //h->DrawClone("AXIS");
 
-    if (dothree) {
-      g3b_e->SetFillStyle(3003);
-      g3b_e->SetFillColor(kGreen+2);
-      g3b_e->Draw("SAME E3");
-      g3b_pl->SetLineColor(kGreen-9);
-      g3b_pl->SetLineStyle(kSolid);//kDotted);
-      g3b_pl->Draw("SAMEL");
-      g3b_mn->SetLineColor(kGreen-9);
-      g3b_mn->SetLineStyle(kSolid);//kDotted);
-      g3b_mn->Draw("SAMEL");    
-    }
+    // if (dothree) {
+    //   //      g3b_e->SetFillStyle(3003);
+    //   g3b_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3b_e->Draw("SAME E3");
+    //   g3b_pl->SetLineColor(kGreen-9);
+    //   g3b_pl->SetLineStyle(kSolid);//kDotted);
+    //   g3b_pl->Draw("SAMEL");
+    //   g3b_mn->SetLineColor(kGreen-9);
+    //   g3b_mn->SetLineStyle(kSolid);//kDotted);
+    //   g3b_mn->Draw("SAMEL");    
+    // }
 
-    g1b_e->SetFillStyle(3003);
-    g1b_e->SetFillColor(kBlue);
-    g1b_e->Draw("SAME E3");
-    g1b_pl->SetLineColor(kBlue-9);
-    g1b_pl->SetLineStyle(kSolid);//kDotted);
-    g1b_pl->Draw("SAMEL");
-    g1b_mn->SetLineColor(kBlue-9);
-    g1b_mn->SetLineStyle(kSolid);//kDotted);
-    g1b_mn->Draw("SAMEL");    
+    // //    g1b_e->SetFillStyle(3003);
+    // g1b_e->SetFillColorAlpha(kBlue,0.1);
+    // g1b_e->Draw("SAME E3");
+    // g1b_pl->SetLineColor(kBlue-9);
+    // g1b_pl->SetLineStyle(kSolid);//kDotted);
+    // g1b_pl->Draw("SAMEL");
+    // g1b_mn->SetLineColor(kBlue-9);
+    // g1b_mn->SetLineStyle(kSolid);//kDotted);
+    // g1b_mn->Draw("SAMEL");    
 
-    g2b_e->SetFillStyle(3003);
-    g2b_e->SetFillColor(kRed);
-    g2b_e->Draw("SAME E3");
-    g2b_pl->SetLineColor(kRed-9);
-    g2b_pl->SetLineStyle(kSolid);//kDotted);
-    g2b_pl->Draw("SAMEL");
-    g2b_mn->SetLineColor(kRed-9);
-    g2b_mn->SetLineStyle(kSolid);//kDotted);
-    g2b_mn->Draw("SAMEL");    
+    // //    g2b_e->SetFillStyle(3003);
+    // g2b_e->SetFillColorAlpha(kRed,0.15);
+    // g2b_e->Draw("SAME E3");
+    // g2b_pl->SetLineColor(kRed-9);
+    // g2b_pl->SetLineStyle(kSolid);//kDotted);
+    // g2b_pl->Draw("SAMEL");
+    // g2b_mn->SetLineColor(kRed-9);
+    // g2b_mn->SetLineStyle(kSolid);//kDotted);
+    // g2b_mn->Draw("SAMEL");    
 
     if (dothree) {
       g3b->SetMarkerStyle(kOpenSquare);
       g3b->SetMarkerColor(kGreen+2);
       g3b->SetLineColor(kGreen+2);
-      g3b->Draw("SAMEPL");
+      g3b->Draw("SAMEPL4");
     }
 
     g1b->SetMarkerStyle(kFullSquare);
     g1b->SetMarkerColor(kBlue);
     g1b->SetLineColor(kBlue);
-    g1b->Draw("SAMEPL");
+    g1b->Draw("SAMEPL4");
     
     g2b->SetMarkerStyle(kFullCircle);
     g2b->SetMarkerColor(kRed);
     g2b->SetLineColor(kRed);
-    g2b->Draw("SAMEPL");
+    g2b->Draw("SAMEPL4");
     
     //tex->DrawLatex(0.20,0.88,Form("p_{T,%s} = 100 GeV%s, %s",cgen,
     //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
@@ -1857,54 +1179,54 @@ void compareJECversions(string algo="AK4PFchs",
   {
     c1c->cd();
 
-    if (dothree) {
-      g3c_e->SetFillStyle(3003);
-      g3c_e->SetFillColor(kGreen+2);
-      g3c_e->Draw("SAME E3");
-      g3c_pl->SetLineColor(kGreen-9);
-      g3c_pl->SetLineStyle(kSolid);
-      g3c_pl->Draw("SAMEL");
-      g3c_mn->SetLineColor(kGreen-9);
-      g3c_mn->SetLineStyle(kSolid);
-      g3c_mn->Draw("SAMEL");    
-    }
+    // if (dothree) {
+    //   g3c_e->SetFillStyle(3003);
+    //   g3c_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3c_e->Draw("SAME E3");
+    //   g3c_pl->SetLineColor(kGreen-9);
+    //   g3c_pl->SetLineStyle(kSolid);
+    //   g3c_pl->Draw("SAMEL");
+    //   g3c_mn->SetLineColor(kGreen-9);
+    //   g3c_mn->SetLineStyle(kSolid);
+    //   g3c_mn->Draw("SAMEL");    
+    // }
 
-    g1c_e->SetFillStyle(3003);
-    g1c_e->SetFillColor(kBlue);
-    g1c_e->Draw("SAME E3");
-    g1c_pl->SetLineColor(kBlue-9);
-    g1c_pl->SetLineStyle(kSolid);
-    g1c_pl->Draw("SAMEL");
-    g1c_mn->SetLineColor(kBlue-9);
-    g1c_mn->SetLineStyle(kSolid);
-    g1c_mn->Draw("SAMEL");    
+    // g1c_e->SetFillStyle(3003);
+    // g1c_e->SetFillColorAlpha(kBlue,0.1);
+    // g1c_e->Draw("SAME E3");
+    // g1c_pl->SetLineColor(kBlue-9);
+    // g1c_pl->SetLineStyle(kSolid);
+    // g1c_pl->Draw("SAMEL");
+    // g1c_mn->SetLineColor(kBlue-9);
+    // g1c_mn->SetLineStyle(kSolid);
+    // g1c_mn->Draw("SAMEL");    
 
-    g2c_e->SetFillStyle(3003);
-    g2c_e->SetFillColor(kRed);
-    g2c_e->Draw("SAME E3");
-    g2c_pl->SetLineColor(kRed-9);
-    g2c_pl->SetLineStyle(kSolid);
-    g2c_pl->Draw("SAMEL");
-    g2c_mn->SetLineColor(kRed-9);
-    g2c_mn->SetLineStyle(kSolid);
-    g2c_mn->Draw("SAMEL");    
+    // g2c_e->SetFillStyle(3003);
+    // g2c_e->SetFillColorAlpha(kRed,0.15);
+    // g2c_e->Draw("SAME E3");
+    // g2c_pl->SetLineColor(kRed-9);
+    // g2c_pl->SetLineStyle(kSolid);
+    // g2c_pl->Draw("SAMEL");
+    // g2c_mn->SetLineColor(kRed-9);
+    // g2c_mn->SetLineStyle(kSolid);
+    // g2c_mn->Draw("SAMEL");    
 
     if (dothree) {
       g3c->SetMarkerStyle(kOpenSquare);
       g3c->SetMarkerColor(kGreen+2);
       g3c->SetLineColor(kGreen+2);
-      g3c->Draw("SAMEPL");
+      g3c->Draw("SAMEPL4");
     }
 
     g1c->SetMarkerStyle(kFullSquare);
     g1c->SetMarkerColor(kBlue);
     g1c->SetLineColor(kBlue);
-    g1c->Draw("SAMEPL");
+    g1c->Draw("SAMEPL4");
     
     g2c->SetMarkerStyle(kFullCircle);
     g2c->SetMarkerColor(kRed);
     g2c->SetLineColor(kRed);
-    g2c->Draw("SAMEPL");
+    g2c->Draw("SAMEPL4");
     
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 1000 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1925,54 +1247,54 @@ void compareJECversions(string algo="AK4PFchs",
   {
     c1f->cd();
 
-    if (dothree) {
-      g3f_e->SetFillStyle(3003);
-      g3f_e->SetFillColor(kGreen+2);
-      g3f_e->Draw("SAME E3");
-      g3f_pl->SetLineColor(kGreen-9);
-      g3f_pl->SetLineStyle(kSolid);
-      g3f_pl->Draw("SAMEL");
-      g3f_mn->SetLineColor(kGreen-9);
-      g3f_mn->SetLineStyle(kSolid);
-      g3f_mn->Draw("SAMEL");    
-    }
+    // if (dothree) {
+    //   g3f_e->SetFillStyle(3003);
+    //   g3f_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3f_e->Draw("SAME E3");
+    //   g3f_pl->SetLineColor(kGreen-9);
+    //   g3f_pl->SetLineStyle(kSolid);
+    //   g3f_pl->Draw("SAMEL");
+    //   g3f_mn->SetLineColor(kGreen-9);
+    //   g3f_mn->SetLineStyle(kSolid);
+    //   g3f_mn->Draw("SAMEL");    
+    // }
 
-    g1f_e->SetFillStyle(3003);
-    g1f_e->SetFillColor(kBlue);
-    g1f_e->Draw("SAME E3");
-    g1f_pl->SetLineColor(kBlue-9);
-    g1f_pl->SetLineStyle(kSolid);
-    g1f_pl->Draw("SAMEL");
-    g1f_mn->SetLineColor(kBlue-9);
-    g1f_mn->SetLineStyle(kSolid);
-    g1f_mn->Draw("SAMEL");    
+    // g1f_e->SetFillStyle(3003);
+    // g1f_e->SetFillColorAlpha(kBlue,0.1);
+    // g1f_e->Draw("SAME E3");
+    // g1f_pl->SetLineColor(kBlue-9);
+    // g1f_pl->SetLineStyle(kSolid);
+    // g1f_pl->Draw("SAMEL");
+    // g1f_mn->SetLineColor(kBlue-9);
+    // g1f_mn->SetLineStyle(kSolid);
+    // g1f_mn->Draw("SAMEL");    
 
-    g2f_e->SetFillStyle(3003);
-    g2f_e->SetFillColor(kRed);
-    g2f_e->Draw("SAME E3");
-    g2f_pl->SetLineColor(kRed-9);
-    g2f_pl->SetLineStyle(kSolid);
-    g2f_pl->Draw("SAMEL");
-    g2f_mn->SetLineColor(kRed-9);
-    g2f_mn->SetLineStyle(kSolid);
-    g2f_mn->Draw("SAMEL");    
+    // g2f_e->SetFillStyle(3003);
+    // g2f_e->SetFillColorAlpha(kRed,0.15);
+    // g2f_e->Draw("SAME E3");
+    // g2f_pl->SetLineColor(kRed-9);
+    // g2f_pl->SetLineStyle(kSolid);
+    // g2f_pl->Draw("SAMEL");
+    // g2f_mn->SetLineColor(kRed-9);
+    // g2f_mn->SetLineStyle(kSolid);
+    // g2f_mn->Draw("SAMEL");    
 
     if (dothree) {
       g3f->SetMarkerStyle(kOpenSquare);
       g3f->SetMarkerColor(kGreen+2);
       g3f->SetLineColor(kGreen+2);
-      g3f->Draw("SAMEPL");
+      g3f->Draw("SAMEPL4");
     }
 
     g1f->SetMarkerStyle(kFullSquare);
     g1f->SetMarkerColor(kBlue);
     g1f->SetLineColor(kBlue);
-    g1f->Draw("SAMEPL");
+    g1f->Draw("SAMEPL4");
     
     g2f->SetMarkerStyle(kFullCircle);
     g2f->SetMarkerColor(kRed);
     g2f->SetLineColor(kRed);
-    g2f->Draw("SAMEPL");
+    g2f->Draw("SAMEPL4");
     
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 400 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1989,136 +1311,136 @@ void compareJECversions(string algo="AK4PFchs",
     gPad->RedrawAxis();
   }
 
-  // ***** E = 1000
-  {
-    c1e->cd();
-    //h->DrawClone("AXIS");
+  // // ***** E = 1000
+  // {
+  //   c1e->cd();
+  //   //h->DrawClone("AXIS");
 
-    if (dothree) {
-      g3e_e->SetFillStyle(3003);
-      g3e_e->SetFillColor(kGreen+2);
-      g3e_e->Draw("SAME E3");
-      g3e_pl->SetLineColor(kGreen-9);
-      g3e_pl->SetLineStyle(kSolid);//kDotted);
-      g3e_pl->Draw("SAMEL");
-      g3e_mn->SetLineColor(kGreen-9);
-      g3e_mn->SetLineStyle(kSolid);//kDotted);
-      g3e_mn->Draw("SAMEL");
-    }
+  //   // if (dothree) {
+  //   //   g3e_e->SetFillStyle(3003);
+  //   //   g3e_e->SetFillColorAlpha(kGreen+2,0.05);
+  //   //   g3e_e->Draw("SAME E3");
+  //   //   g3e_pl->SetLineColor(kGreen-9);
+  //   //   g3e_pl->SetLineStyle(kSolid);//kDotted);
+  //   //   g3e_pl->Draw("SAMEL");
+  //   //   g3e_mn->SetLineColor(kGreen-9);
+  //   //   g3e_mn->SetLineStyle(kSolid);//kDotted);
+  //   //   g3e_mn->Draw("SAMEL");
+  //   // }
 
-    g1e_e->SetFillStyle(3003);
-    g1e_e->SetFillColor(kBlue);
-    g1e_e->Draw("SAME E3");
-    g1e_pl->SetLineColor(kBlue-9);
-    g1e_pl->SetLineStyle(kSolid);//kDotted);
-    g1e_pl->Draw("SAMEL");
-    g1e_mn->SetLineColor(kBlue-9);
-    g1e_mn->SetLineStyle(kSolid);//kDotted);
-    g1e_mn->Draw("SAMEL");
+  //   // g1e_e->SetFillStyle(3003);
+  //   // g1e_e->SetFillColorAlpha(kBlue,0.1);
+  //   // g1e_e->Draw("SAME E3");
+  //   // g1e_pl->SetLineColor(kBlue-9);
+  //   // g1e_pl->SetLineStyle(kSolid);//kDotted);
+  //   // g1e_pl->Draw("SAMEL");
+  //   // g1e_mn->SetLineColor(kBlue-9);
+  //   // g1e_mn->SetLineStyle(kSolid);//kDotted);
+  //   // g1e_mn->Draw("SAMEL");
 
-    g2e_e->SetFillStyle(3003);
-    g2e_e->SetFillColor(kRed);
-    g2e_e->Draw("SAME E3");
-    g2e_pl->SetLineColor(kRed-9);
-    g2e_pl->SetLineStyle(kSolid);//kDotted);
-    g2e_pl->Draw("SAMEL");
-    g2e_mn->SetLineColor(kRed-9);
-    g2e_mn->SetLineStyle(kSolid);//kDotted);
-    g2e_mn->Draw("SAMEL");
+  //   // g2e_e->SetFillStyle(3003);
+  //   // g2e_e->SetFillColorAlpha(kRed,0.15);
+  //   // g2e_e->Draw("SAME E3");
+  //   // g2e_pl->SetLineColor(kRed-9);
+  //   // g2e_pl->SetLineStyle(kSolid);//kDotted);
+  //   // g2e_pl->Draw("SAMEL");
+  //   // g2e_mn->SetLineColor(kRed-9);
+  //   // g2e_mn->SetLineStyle(kSolid);//kDotted);
+  //   // g2e_mn->Draw("SAMEL");
     
-    if (dothree) {
-      g3e->SetMarkerStyle(kOpenSquare);
-      g3e->SetMarkerColor(kGreen+2);
-      g3e->SetLineColor(kGreen+2);
-      g3e->Draw("SAMEPL");
-    }
+  //   if (dothree) {
+  //     g3e->SetMarkerStyle(kOpenSquare);
+  //     g3e->SetMarkerColor(kGreen+2);
+  //     g3e->SetLineColor(kGreen+2);
+  //     g3e->Draw("SAMEPL4");
+  //   }
 
-    g1e->SetMarkerStyle(kFullSquare);
-    g1e->SetMarkerColor(kBlue);
-    g1e->SetLineColor(kBlue);
-    g1e->Draw("SAMEPL");
+  //   g1e->SetMarkerStyle(kFullSquare);
+  //   g1e->SetMarkerColor(kBlue);
+  //   g1e->SetLineColor(kBlue);
+  //   g1e->Draw("SAMEPL4");
     
-    g2e->SetMarkerStyle(kFullCircle);
-    g2e->SetMarkerColor(kRed);
-    g2e->SetLineColor(kRed);
-    g2e->Draw("SAMEPL");
+  //   g2e->SetMarkerStyle(kFullCircle);
+  //   g2e->SetMarkerColor(kRed);
+  //   g2e->SetLineColor(kRed);
+  //   g2e->Draw("SAMEPL4");
     
-    //tex->DrawLatex(0.20,0.88,Form("E_{%s} = 1000 GeV%s, %s",cgen,
-    //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
-    //				  cm));
-    //tex->DrawLatex(0.65,0.80,a);
-    //leg->Draw();
+  //   //tex->DrawLatex(0.20,0.88,Form("E_{%s} = 1000 GeV%s, %s",cgen,
+  //   //				  l1||l2l3 ? Form(", #LT#mu#GT = %1.1f",_mu) : "",
+  //   //				  cm));
+  //   //tex->DrawLatex(0.65,0.80,a);
+  //   //leg->Draw();
 
-    tex->DrawLatex(0.19,0.75,Form("E_{%s} = 1000 GeV",cgen));
-    if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
+  //   tex->DrawLatex(0.19,0.75,Form("E_{%s} = 1000 GeV",cgen));
+  //   if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
 
-    //TLegend *leg1e = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
-    //    TLegend *leg1e = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
-    TLegend *leg1e = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
-    leg1e->SetTextSize(0.03);
-    leg1e->SetHeader(texmap[a]);
-    leg1e->AddEntry(g2e,s2,"LPF");
-    leg1e->AddEntry(g1e,s1,"LPF");
-    if (dothree) leg1e->AddEntry(g3e,s3,"LPF");
+  //   //TLegend *leg1e = tdrLeg(0.60, dothree ? 0.66 : 0.73, 0.90, 0.90);
+  //   //    TLegend *leg1e = tdrLeg(0.57, dothree ? 0.66 : 0.73, 0.87, 0.90);
+  //   TLegend *leg1e = tdrLeg(0.52, dothree ? 0.66 : 0.72, 0.77, 0.90);
+  //   leg1e->SetTextSize(0.03);
+  //   leg1e->SetHeader(texmap[a]);
+  //   leg1e->AddEntry(g2e,s2,"LPF");
+  //   leg1e->AddEntry(g1e,s1,"LPF");
+  //   if (dothree) leg1e->AddEntry(g3e,s3,"LPF");
 
-    //if (!mc) cmsPrel(_lumi);
-    //if (mc)  cmsPrel(0);
-    gPad->RedrawAxis();
-  }
+  //   //if (!mc) cmsPrel(_lumi);
+  //   //if (mc)  cmsPrel(0);
+  //   gPad->RedrawAxis();
+  // }
 
   // ***** Eta = 0
   {
     c1d->cd();
     c1d->SetLogx();
     
-    if (dothree) {
-      g3d_e->SetFillStyle(3003);
-      g3d_e->SetFillColor(kGreen+2);
-      g3d_e->Draw("SAME E3");
-      g3d_pl->SetLineColor(kGreen-9);
-      g3d_pl->SetLineStyle(kSolid);
-      g3d_pl->Draw("SAMEL");
-      g3d_mn->SetLineColor(kGreen-9);
-      g3d_mn->SetLineStyle(kSolid);
-      g3d_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d_e->SetFillStyle(3003);
+    //   g3d_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d_e->Draw("SAME E3");
+    //   g3d_pl->SetLineColor(kGreen-9);
+    //   g3d_pl->SetLineStyle(kSolid);
+    //   g3d_pl->Draw("SAMEL");
+    //   g3d_mn->SetLineColor(kGreen-9);
+    //   g3d_mn->SetLineStyle(kSolid);
+    //   g3d_mn->Draw("SAMEL");
+    // }
 
-    g1d_e->SetFillStyle(3003);
-    g1d_e->SetFillColor(kBlue);
-    g1d_e->Draw("SAME E3");
-    g1d_pl->SetLineColor(kBlue-9);
-    g1d_pl->SetLineStyle(kSolid);
-    g1d_pl->Draw("SAMEL");
-    g1d_mn->SetLineColor(kBlue-9);
-    g1d_mn->SetLineStyle(kSolid);
-    g1d_mn->Draw("SAMEL");
+    // g1d_e->SetFillStyle(3003);
+    // g1d_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d_e->Draw("SAME E3");
+    // g1d_pl->SetLineColor(kBlue-9);
+    // g1d_pl->SetLineStyle(kSolid);
+    // g1d_pl->Draw("SAMEL");
+    // g1d_mn->SetLineColor(kBlue-9);
+    // g1d_mn->SetLineStyle(kSolid);
+    // g1d_mn->Draw("SAMEL");
 
-    g2d_e->SetFillStyle(3003);
-    g2d_e->SetFillColor(kRed);
-    g2d_e->Draw("SAME E3");
-    g2d_pl->SetLineColor(kRed-9);
-    g2d_pl->SetLineStyle(kSolid);
-    g2d_pl->Draw("SAMEL");
-    g2d_mn->SetLineColor(kRed-9);
-    g2d_mn->SetLineStyle(kSolid);
-    g2d_mn->Draw("SAMEL");
+    // g2d_e->SetFillStyle(3003);
+    // g2d_e->SetFillColorAlpha(kRed,0.15);
+    // g2d_e->Draw("SAME E3");
+    // g2d_pl->SetLineColor(kRed-9);
+    // g2d_pl->SetLineStyle(kSolid);
+    // g2d_pl->Draw("SAMEL");
+    // g2d_mn->SetLineColor(kRed-9);
+    // g2d_mn->SetLineStyle(kSolid);
+    // g2d_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d->SetMarkerStyle(kOpenSquare);
       g3d->SetMarkerColor(kGreen+2);
       g3d->SetLineColor(kGreen+2);
-      g3d->Draw("SAMEPL");
+      g3d->Draw("SAMEPL4");
     }
 
     g1d->SetMarkerStyle(kFullSquare);
     g1d->SetMarkerColor(kBlue);
     g1d->SetLineColor(kBlue);
-    g1d->Draw("SAMEPL");
+    g1d->Draw("SAMEPL4");
 
     g2d->SetMarkerStyle(kFullCircle);
     g2d->SetMarkerColor(kRed);
     g2d->SetLineColor(kRed);
-    g2d->Draw("SAMEPL");
+    g2d->Draw("SAMEPL4");
 
     //    tex->DrawLatex(0.19,0.75,"|#eta| = 0");
     tex->DrawLatex(0.19,0.75,"|#eta|<1.3");
@@ -2142,54 +1464,56 @@ void compareJECversions(string algo="AK4PFchs",
     c1d25->cd();
     c1d25->SetLogx();
     
-    if (dothree) {
-      g3d25_e->SetFillStyle(3003);
-      g3d25_e->SetFillColor(kGreen+2);
-      g3d25_e->Draw("SAME E3");
-      g3d25_pl->SetLineColor(kGreen-9);
-      g3d25_pl->SetLineStyle(kSolid);
-      g3d25_pl->Draw("SAMEL");
-      g3d25_mn->SetLineColor(kGreen-9);
-      g3d25_mn->SetLineStyle(kSolid);
-      g3d25_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d25_e->SetFillStyle(3003);
+    //   g3d25_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d25_e->Draw("SAME E3");
+    //   g3d25_pl->SetLineColor(kGreen-9);
+    //   g3d25_pl->SetLineStyle(kSolid);
+    //   g3d25_pl->Draw("SAMEL");
+    //   g3d25_mn->SetLineColor(kGreen-9);
+    //   g3d25_mn->SetLineStyle(kSolid);
+    //   g3d25_mn->Draw("SAMEL");
+    // }
 
-    g1d25_e->SetFillStyle(3003);
-    g1d25_e->SetFillColor(kBlue);
-    g1d25_e->Draw("SAME E3");
-    g1d25_pl->SetLineColor(kBlue-9);
-    g1d25_pl->SetLineStyle(kSolid);
-    g1d25_pl->Draw("SAMEL");
-    g1d25_mn->SetLineColor(kBlue-9);
-    g1d25_mn->SetLineStyle(kSolid);
-    g1d25_mn->Draw("SAMEL");
+    // g1d25_e->SetFillStyle(3003);
+    // g1d25_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d25_e->Draw("SAME E3");
+    // g1d25_pl->SetLineColor(kBlue-9);
+    // g1d25_pl->SetLineStyle(kSolid);
+    // g1d25_pl->Draw("SAMEL");
+    // g1d25_mn->SetLineColor(kBlue-9);
+    // g1d25_mn->SetLineStyle(kSolid);
+    // g1d25_mn->Draw("SAMEL");
 
-    g2d25_e->SetFillStyle(3003);
-    g2d25_e->SetFillColor(kRed);
-    g2d25_e->Draw("SAME E3");
-    g2d25_pl->SetLineColor(kRed-9);
-    g2d25_pl->SetLineStyle(kSolid);
-    g2d25_pl->Draw("SAMEL");
-    g2d25_mn->SetLineColor(kRed-9);
-    g2d25_mn->SetLineStyle(kSolid);
-    g2d25_mn->Draw("SAMEL");
+    // g2d25_e->SetFillStyle(3003);
+    // g2d25_e->SetFillColorAlpha(kRed,0.15);
+    // g2d25_e->Draw("SAME E3");
+    // g2d25_pl->SetLineColor(kRed-9);
+    // g2d25_pl->SetLineStyle(kSolid);
+    // g2d25_pl->Draw("SAMEL");
+    // g2d25_mn->SetLineColor(kRed-9);
+    // g2d25_mn->SetLineStyle(kSolid);
+    // g2d25_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d25->SetMarkerStyle(kOpenSquare);
       g3d25->SetMarkerColor(kGreen+2);
       g3d25->SetLineColor(kGreen+2);
-      g3d25->Draw("SAMEPL");
+      g3d25->Draw("SAMEPL4");
     }
 
     g1d25->SetMarkerStyle(kFullSquare);
     g1d25->SetMarkerColor(kBlue);
     g1d25->SetLineColor(kBlue);
-    g1d25->Draw("SAMEPL");
+    //    g1d25->Draw("SAMEPL4");
+    g1d25->Draw("SAMEPL4");
 
     g2d25->SetMarkerStyle(kFullCircle);
     g2d25->SetMarkerColor(kRed);
     g2d25->SetLineColor(kRed);
-    g2d25->Draw("SAMEPL");
+    //    g2d25->Draw("SAMEPL4");
+    g2d25->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 2.5");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -2212,54 +1536,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1d45->cd();
     c1d45->SetLogx();
     
-    if (dothree) {
-      g3d45_e->SetFillStyle(3003);
-      g3d45_e->SetFillColor(kGreen+2);
-      g3d45_e->Draw("SAME E3");
-      g3d45_pl->SetLineColor(kGreen-9);
-      g3d45_pl->SetLineStyle(kSolid);
-      g3d45_pl->Draw("SAMEL");
-      g3d45_mn->SetLineColor(kGreen-9);
-      g3d45_mn->SetLineStyle(kSolid);
-      g3d45_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d45_e->SetFillStyle(3003);
+    //   g3d45_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d45_e->Draw("SAME E3");
+    //   g3d45_pl->SetLineColor(kGreen-9);
+    //   g3d45_pl->SetLineStyle(kSolid);
+    //   g3d45_pl->Draw("SAMEL");
+    //   g3d45_mn->SetLineColor(kGreen-9);
+    //   g3d45_mn->SetLineStyle(kSolid);
+    //   g3d45_mn->Draw("SAMEL");
+    // }
 
-    g1d45_e->SetFillStyle(3003);
-    g1d45_e->SetFillColor(kBlue);
-    g1d45_e->Draw("SAME E3");
-    g1d45_pl->SetLineColor(kBlue-9);
-    g1d45_pl->SetLineStyle(kSolid);
-    g1d45_pl->Draw("SAMEL");
-    g1d45_mn->SetLineColor(kBlue-9);
-    g1d45_mn->SetLineStyle(kSolid);
-    g1d45_mn->Draw("SAMEL");
+    // g1d45_e->SetFillStyle(3003);
+    // g1d45_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d45_e->Draw("SAME E3");
+    // g1d45_pl->SetLineColor(kBlue-9);
+    // g1d45_pl->SetLineStyle(kSolid);
+    // g1d45_pl->Draw("SAMEL");
+    // g1d45_mn->SetLineColor(kBlue-9);
+    // g1d45_mn->SetLineStyle(kSolid);
+    // g1d45_mn->Draw("SAMEL");
 
-    g2d45_e->SetFillStyle(3003);
-    g2d45_e->SetFillColor(kRed);
-    g2d45_e->Draw("SAME E3");
-    g2d45_pl->SetLineColor(kRed-9);
-    g2d45_pl->SetLineStyle(kSolid);
-    g2d45_pl->Draw("SAMEL");
-    g2d45_mn->SetLineColor(kRed-9);
-    g2d45_mn->SetLineStyle(kSolid);
-    g2d45_mn->Draw("SAMEL");
+    // g2d45_e->SetFillStyle(3003);
+    // g2d45_e->SetFillColorAlpha(kRed,0.15);
+    // g2d45_e->Draw("SAME E3");
+    // g2d45_pl->SetLineColor(kRed-9);
+    // g2d45_pl->SetLineStyle(kSolid);
+    // g2d45_pl->Draw("SAMEL");
+    // g2d45_mn->SetLineColor(kRed-9);
+    // g2d45_mn->SetLineStyle(kSolid);
+    // g2d45_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d45->SetMarkerStyle(kOpenSquare);
       g3d45->SetMarkerColor(kGreen+2);
       g3d45->SetLineColor(kGreen+2);
-      g3d45->Draw("SAMEPL");
+      g3d45->Draw("SAMEPL4");
     }
 
     g1d45->SetMarkerStyle(kFullSquare);
     g1d45->SetMarkerColor(kBlue);
     g1d45->SetLineColor(kBlue);
-    g1d45->Draw("SAMEPL");
+    g1d45->Draw("SAMEPL4");
 
     g2d45->SetMarkerStyle(kFullCircle);
     g2d45->SetMarkerColor(kRed);
     g2d45->SetLineColor(kRed);
-    g2d45->Draw("SAMEPL");
+    g2d45->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.5");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -2282,54 +1606,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1d40->cd();
     c1d40->SetLogx();
     
-    if (dothree) {
-      g3d40_e->SetFillStyle(3003);
-      g3d40_e->SetFillColor(kGreen+2);
-      g3d40_e->Draw("SAME E3");
-      g3d40_pl->SetLineColor(kGreen-9);
-      g3d40_pl->SetLineStyle(kSolid);
-      g3d40_pl->Draw("SAMEL");
-      g3d40_mn->SetLineColor(kGreen-9);
-      g3d40_mn->SetLineStyle(kSolid);
-      g3d40_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d40_e->SetFillStyle(3003);
+    //   g3d40_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d40_e->Draw("SAME E3");
+    //   g3d40_pl->SetLineColor(kGreen-9);
+    //   g3d40_pl->SetLineStyle(kSolid);
+    //   g3d40_pl->Draw("SAMEL");
+    //   g3d40_mn->SetLineColor(kGreen-9);
+    //   g3d40_mn->SetLineStyle(kSolid);
+    //   g3d40_mn->Draw("SAMEL");
+    // }
 
-    g1d40_e->SetFillStyle(3003);
-    g1d40_e->SetFillColor(kBlue);
-    g1d40_e->Draw("SAME E3");
-    g1d40_pl->SetLineColor(kBlue-9);
-    g1d40_pl->SetLineStyle(kSolid);
-    g1d40_pl->Draw("SAMEL");
-    g1d40_mn->SetLineColor(kBlue-9);
-    g1d40_mn->SetLineStyle(kSolid);
-    g1d40_mn->Draw("SAMEL");
+    // g1d40_e->SetFillStyle(3003);
+    // g1d40_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d40_e->Draw("SAME E3");
+    // g1d40_pl->SetLineColor(kBlue-9);
+    // g1d40_pl->SetLineStyle(kSolid);
+    // g1d40_pl->Draw("SAMEL");
+    // g1d40_mn->SetLineColor(kBlue-9);
+    // g1d40_mn->SetLineStyle(kSolid);
+    // g1d40_mn->Draw("SAMEL");
 
-    g2d40_e->SetFillStyle(3003);
-    g2d40_e->SetFillColor(kRed);
-    g2d40_e->Draw("SAME E3");
-    g2d40_pl->SetLineColor(kRed-9);
-    g2d40_pl->SetLineStyle(kSolid);
-    g2d40_pl->Draw("SAMEL");
-    g2d40_mn->SetLineColor(kRed-9);
-    g2d40_mn->SetLineStyle(kSolid);
-    g2d40_mn->Draw("SAMEL");
+    // g2d40_e->SetFillStyle(3003);
+    // g2d40_e->SetFillColorAlpha(kRed,0.15);
+    // g2d40_e->Draw("SAME E3");
+    // g2d40_pl->SetLineColor(kRed-9);
+    // g2d40_pl->SetLineStyle(kSolid);
+    // g2d40_pl->Draw("SAMEL");
+    // g2d40_mn->SetLineColor(kRed-9);
+    // g2d40_mn->SetLineStyle(kSolid);
+    // g2d40_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d40->SetMarkerStyle(kOpenSquare);
       g3d40->SetMarkerColor(kGreen+2);
       g3d40->SetLineColor(kGreen+2);
-      g3d40->Draw("SAMEPL");
+      g3d40->Draw("SAMEPL4");
     }
 
     g1d40->SetMarkerStyle(kFullSquare);
     g1d40->SetMarkerColor(kBlue);
     g1d40->SetLineColor(kBlue);
-    g1d40->Draw("SAMEPL");
+    g1d40->Draw("SAMEPL4");
 
     g2d40->SetMarkerStyle(kFullCircle);
     g2d40->SetMarkerColor(kRed);
     g2d40->SetLineColor(kRed);
-    g2d40->Draw("SAMEPL");
+    g2d40->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -2351,54 +1675,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1d00->cd();
     c1d00->SetLogx();
     
-    if (dothree) {
-      g3d00_e->SetFillStyle(3003);
-      g3d00_e->SetFillColor(kGreen+2);
-      g3d00_e->Draw("SAME E3");
-      g3d00_pl->SetLineColor(kGreen-9);
-      g3d00_pl->SetLineStyle(kSolid);
-      g3d00_pl->Draw("SAMEL");
-      g3d00_mn->SetLineColor(kGreen-9);
-      g3d00_mn->SetLineStyle(kSolid);
-      g3d00_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d00_e->SetFillStyle(3003);
+    //   g3d00_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d00_e->Draw("SAME E3");
+    //   g3d00_pl->SetLineColor(kGreen-9);
+    //   g3d00_pl->SetLineStyle(kSolid);
+    //   g3d00_pl->Draw("SAMEL");
+    //   g3d00_mn->SetLineColor(kGreen-9);
+    //   g3d00_mn->SetLineStyle(kSolid);
+    //   g3d00_mn->Draw("SAMEL");
+    // }
 
-    g1d00_e->SetFillStyle(3003);
-    g1d00_e->SetFillColor(kBlue);
-    g1d00_e->Draw("SAME E3");
-    g1d00_pl->SetLineColor(kBlue-9);
-    g1d00_pl->SetLineStyle(kSolid);
-    g1d00_pl->Draw("SAMEL");
-    g1d00_mn->SetLineColor(kBlue-9);
-    g1d00_mn->SetLineStyle(kSolid);
-    g1d00_mn->Draw("SAMEL");
+    // g1d00_e->SetFillStyle(3003);
+    // g1d00_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d00_e->Draw("SAME E3");
+    // g1d00_pl->SetLineColor(kBlue-9);
+    // g1d00_pl->SetLineStyle(kSolid);
+    // g1d00_pl->Draw("SAMEL");
+    // g1d00_mn->SetLineColor(kBlue-9);
+    // g1d00_mn->SetLineStyle(kSolid);
+    // g1d00_mn->Draw("SAMEL");
 
-    g2d00_e->SetFillStyle(3003);
-    g2d00_e->SetFillColor(kRed);
-    g2d00_e->Draw("SAME E3");
-    g2d00_pl->SetLineColor(kRed-9);
-    g2d00_pl->SetLineStyle(kSolid);
-    g2d00_pl->Draw("SAMEL");
-    g2d00_mn->SetLineColor(kRed-9);
-    g2d00_mn->SetLineStyle(kSolid);
-    g2d00_mn->Draw("SAMEL");
+    // g2d00_e->SetFillStyle(3003);
+    // g2d00_e->SetFillColorAlpha(kRed,0.15);
+    // g2d00_e->Draw("SAME E3");
+    // g2d00_pl->SetLineColor(kRed-9);
+    // g2d00_pl->SetLineStyle(kSolid);
+    // g2d00_pl->Draw("SAMEL");
+    // g2d00_mn->SetLineColor(kRed-9);
+    // g2d00_mn->SetLineStyle(kSolid);
+    // g2d00_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d00->SetMarkerStyle(kOpenSquare);
       g3d00->SetMarkerColor(kGreen+2);
       g3d00->SetLineColor(kGreen+2);
-      g3d00->Draw("SAMEPL");
+      g3d00->Draw("SAMEPL4");
     }
 
     g1d00->SetMarkerStyle(kFullSquare);
     g1d00->SetMarkerColor(kBlue);
     g1d00->SetLineColor(kBlue);
-    g1d00->Draw("SAMEPL");
+    g1d00->Draw("SAMEPL4");
 
     g2d00->SetMarkerStyle(kFullCircle);
     g2d00->SetMarkerColor(kRed);
     g2d00->SetLineColor(kRed);
-    g2d00->Draw("SAMEPL");
+    g2d00->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 0.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -2421,54 +1745,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1d48->cd();
     c1d48->SetLogx();
     
-    if (dothree) {
-      g3d48_e->SetFillStyle(3003);
-      g3d48_e->SetFillColor(kGreen+2);
-      g3d48_e->Draw("SAME E3");
-      g3d48_pl->SetLineColor(kGreen-9);
-      g3d48_pl->SetLineStyle(kSolid);
-      g3d48_pl->Draw("SAMEL");
-      g3d48_mn->SetLineColor(kGreen-9);
-      g3d48_mn->SetLineStyle(kSolid);
-      g3d48_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d48_e->SetFillStyle(3003);
+    //   g3d48_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d48_e->Draw("SAME E3");
+    //   g3d48_pl->SetLineColor(kGreen-9);
+    //   g3d48_pl->SetLineStyle(kSolid);
+    //   g3d48_pl->Draw("SAMEL");
+    //   g3d48_mn->SetLineColor(kGreen-9);
+    //   g3d48_mn->SetLineStyle(kSolid);
+    //   g3d48_mn->Draw("SAMEL");
+    // }
 
-    g1d48_e->SetFillStyle(3003);
-    g1d48_e->SetFillColor(kBlue);
-    g1d48_e->Draw("SAME E3");
-    g1d48_pl->SetLineColor(kBlue-9);
-    g1d48_pl->SetLineStyle(kSolid);
-    g1d48_pl->Draw("SAMEL");
-    g1d48_mn->SetLineColor(kBlue-9);
-    g1d48_mn->SetLineStyle(kSolid);
-    g1d48_mn->Draw("SAMEL");
+    // g1d48_e->SetFillStyle(3003);
+    // g1d48_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d48_e->Draw("SAME E3");
+    // g1d48_pl->SetLineColor(kBlue-9);
+    // g1d48_pl->SetLineStyle(kSolid);
+    // g1d48_pl->Draw("SAMEL");
+    // g1d48_mn->SetLineColor(kBlue-9);
+    // g1d48_mn->SetLineStyle(kSolid);
+    // g1d48_mn->Draw("SAMEL");
 
-    g2d48_e->SetFillStyle(3003);
-    g2d48_e->SetFillColor(kRed);
-    g2d48_e->Draw("SAME E3");
-    g2d48_pl->SetLineColor(kRed-9);
-    g2d48_pl->SetLineStyle(kSolid);
-    g2d48_pl->Draw("SAMEL");
-    g2d48_mn->SetLineColor(kRed-9);
-    g2d48_mn->SetLineStyle(kSolid);
-    g2d48_mn->Draw("SAMEL");
+    // g2d48_e->SetFillStyle(3003);
+    // g2d48_e->SetFillColorAlpha(kRed,0.15);
+    // g2d48_e->Draw("SAME E3");
+    // g2d48_pl->SetLineColor(kRed-9);
+    // g2d48_pl->SetLineStyle(kSolid);
+    // g2d48_pl->Draw("SAMEL");
+    // g2d48_mn->SetLineColor(kRed-9);
+    // g2d48_mn->SetLineStyle(kSolid);
+    // g2d48_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d48->SetMarkerStyle(kOpenSquare);
       g3d48->SetMarkerColor(kGreen+2);
       g3d48->SetLineColor(kGreen+2);
-      g3d48->Draw("SAMEPL");
+      g3d48->Draw("SAMEPL4");
     }
 
     g1d48->SetMarkerStyle(kFullSquare);
     g1d48->SetMarkerColor(kBlue);
     g1d48->SetLineColor(kBlue);
-    g1d48->Draw("SAMEPL");
+    g1d48->Draw("SAMEPL4");
 
     g2d48->SetMarkerStyle(kFullCircle);
     g2d48->SetMarkerColor(kRed);
     g2d48->SetLineColor(kRed);
-    g2d48->Draw("SAMEPL");
+    g2d48->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.8");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -2492,54 +1816,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1d50->cd();
     c1d50->SetLogx();
     
-    if (dothree) {
-      g3d50_e->SetFillStyle(3003);
-      g3d50_e->SetFillColor(kGreen+2);
-      g3d50_e->Draw("SAME E3");
-      g3d50_pl->SetLineColor(kGreen-9);
-      g3d50_pl->SetLineStyle(kSolid);
-      g3d50_pl->Draw("SAMEL");
-      g3d50_mn->SetLineColor(kGreen-9);
-      g3d50_mn->SetLineStyle(kSolid);
-      g3d50_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d50_e->SetFillStyle(3003);
+    //   g3d50_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d50_e->Draw("SAME E3");
+    //   g3d50_pl->SetLineColor(kGreen-9);
+    //   g3d50_pl->SetLineStyle(kSolid);
+    //   g3d50_pl->Draw("SAMEL");
+    //   g3d50_mn->SetLineColor(kGreen-9);
+    //   g3d50_mn->SetLineStyle(kSolid);
+    //   g3d50_mn->Draw("SAMEL");
+    // }
 
-    g1d50_e->SetFillStyle(3003);
-    g1d50_e->SetFillColor(kBlue);
-    g1d50_e->Draw("SAME E3");
-    g1d50_pl->SetLineColor(kBlue-9);
-    g1d50_pl->SetLineStyle(kSolid);
-    g1d50_pl->Draw("SAMEL");
-    g1d50_mn->SetLineColor(kBlue-9);
-    g1d50_mn->SetLineStyle(kSolid);
-    g1d50_mn->Draw("SAMEL");
+    // g1d50_e->SetFillStyle(3003);
+    // g1d50_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d50_e->Draw("SAME E3");
+    // g1d50_pl->SetLineColor(kBlue-9);
+    // g1d50_pl->SetLineStyle(kSolid);
+    // g1d50_pl->Draw("SAMEL");
+    // g1d50_mn->SetLineColor(kBlue-9);
+    // g1d50_mn->SetLineStyle(kSolid);
+    // g1d50_mn->Draw("SAMEL");
 
-    g2d50_e->SetFillStyle(3003);
-    g2d50_e->SetFillColor(kRed);
-    g2d50_e->Draw("SAME E3");
-    g2d50_pl->SetLineColor(kRed-9);
-    g2d50_pl->SetLineStyle(kSolid);
-    g2d50_pl->Draw("SAMEL");
-    g2d50_mn->SetLineColor(kRed-9);
-    g2d50_mn->SetLineStyle(kSolid);
-    g2d50_mn->Draw("SAMEL");
+    // g2d50_e->SetFillStyle(3003);
+    // g2d50_e->SetFillColorAlpha(kRed,0.15);
+    // g2d50_e->Draw("SAME E3");
+    // g2d50_pl->SetLineColor(kRed-9);
+    // g2d50_pl->SetLineStyle(kSolid);
+    // g2d50_pl->Draw("SAMEL");
+    // g2d50_mn->SetLineColor(kRed-9);
+    // g2d50_mn->SetLineStyle(kSolid);
+    // g2d50_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d50->SetMarkerStyle(kOpenSquare);
       g3d50->SetMarkerColor(kGreen+2);
       g3d50->SetLineColor(kGreen+2);
-      g3d50->Draw("SAMEPL");
+      g3d50->Draw("SAMEPL4");
     }
 
     g1d50->SetMarkerStyle(kFullSquare);
     g1d50->SetMarkerColor(kBlue);
     g1d50->SetLineColor(kBlue);
-    g1d50->Draw("SAMEPL");
+    g1d50->Draw("SAMEPL4");
 
     g2d50->SetMarkerStyle(kFullCircle);
     g2d50->SetMarkerColor(kRed);
     g2d50->SetLineColor(kRed);
-    g2d50->Draw("SAMEPL");
+    g2d50->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 5.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -2564,54 +1888,54 @@ void compareJECversions(string algo="AK4PFchs",
     c1d30->cd();
     c1d30->SetLogx();
     
-    if (dothree) {
-      g3d30_e->SetFillStyle(3003);
-      g3d30_e->SetFillColor(kGreen+2);
-      g3d30_e->Draw("SAME E3");
-      g3d30_pl->SetLineColor(kGreen-9);
-      g3d30_pl->SetLineStyle(kSolid);
-      g3d30_pl->Draw("SAMEL");
-      g3d30_mn->SetLineColor(kGreen-9);
-      g3d30_mn->SetLineStyle(kSolid);
-      g3d30_mn->Draw("SAMEL");
-    }
+    // if (dothree) {
+    //   g3d30_e->SetFillStyle(3003);
+    //   g3d30_e->SetFillColorAlpha(kGreen+2,0.05);
+    //   g3d30_e->Draw("SAME E3");
+    //   g3d30_pl->SetLineColor(kGreen-9);
+    //   g3d30_pl->SetLineStyle(kSolid);
+    //   g3d30_pl->Draw("SAMEL");
+    //   g3d30_mn->SetLineColor(kGreen-9);
+    //   g3d30_mn->SetLineStyle(kSolid);
+    //   g3d30_mn->Draw("SAMEL");
+    // }
 
-    g1d30_e->SetFillStyle(3003);
-    g1d30_e->SetFillColor(kBlue);
-    g1d30_e->Draw("SAME E3");
-    g1d30_pl->SetLineColor(kBlue-9);
-    g1d30_pl->SetLineStyle(kSolid);
-    g1d30_pl->Draw("SAMEL");
-    g1d30_mn->SetLineColor(kBlue-9);
-    g1d30_mn->SetLineStyle(kSolid);
-    g1d30_mn->Draw("SAMEL");
+    // g1d30_e->SetFillStyle(3003);
+    // g1d30_e->SetFillColorAlpha(kBlue,0.1);
+    // g1d30_e->Draw("SAME E3");
+    // g1d30_pl->SetLineColor(kBlue-9);
+    // g1d30_pl->SetLineStyle(kSolid);
+    // g1d30_pl->Draw("SAMEL");
+    // g1d30_mn->SetLineColor(kBlue-9);
+    // g1d30_mn->SetLineStyle(kSolid);
+    // g1d30_mn->Draw("SAMEL");
 
-    g2d30_e->SetFillStyle(3003);
-    g2d30_e->SetFillColor(kRed);
-    g2d30_e->Draw("SAME E3");
-    g2d30_pl->SetLineColor(kRed-9);
-    g2d30_pl->SetLineStyle(kSolid);
-    g2d30_pl->Draw("SAMEL");
-    g2d30_mn->SetLineColor(kRed-9);
-    g2d30_mn->SetLineStyle(kSolid);
-    g2d30_mn->Draw("SAMEL");
+    // g2d30_e->SetFillStyle(3003);
+    // g2d30_e->SetFillColorAlpha(kRed,0.15);
+    // g2d30_e->Draw("SAME E3");
+    // g2d30_pl->SetLineColor(kRed-9);
+    // g2d30_pl->SetLineStyle(kSolid);
+    // g2d30_pl->Draw("SAMEL");
+    // g2d30_mn->SetLineColor(kRed-9);
+    // g2d30_mn->SetLineStyle(kSolid);
+    // g2d30_mn->Draw("SAMEL");
         
     if (dothree) {
       g3d30->SetMarkerStyle(kOpenSquare);
       g3d30->SetMarkerColor(kGreen+2);
       g3d30->SetLineColor(kGreen+2);
-      g3d30->Draw("SAMEPL");
+      g3d30->Draw("SAMEPL4");
     }
 
     g1d30->SetMarkerStyle(kFullSquare);
     g1d30->SetMarkerColor(kBlue);
     g1d30->SetLineColor(kBlue);
-    g1d30->Draw("SAMEPL");
+    g1d30->Draw("SAMEPL4");
 
     g2d30->SetMarkerStyle(kFullCircle);
     g2d30->SetMarkerColor(kRed);
     g2d30->SetLineColor(kRed);
-    g2d30->Draw("SAMEPL");
+    g2d30->Draw("SAMEPL4");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 2.9");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
