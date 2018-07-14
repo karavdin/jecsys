@@ -4,6 +4,7 @@
 #pragma link off all functions; 
 #pragma link C++ nestedclasses; 
 #pragma link C++ class JetCorrectorParameters+; 
+#pragma link C++ class JetCorrectorParametersHelper+;
 #pragma link C++ class JetCorrectorParameters::Definitions+; 
 #pragma link C++ class JetCorrectorParameters::Record+; 
 #pragma link C++ class SimpleJetCorrector+; 
