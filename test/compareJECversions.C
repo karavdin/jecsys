@@ -23,12 +23,13 @@
 // positive true overrides negative
 //bool _usenegative = true;
 bool _usenegative = false;
-//bool _usepositive = false;
-bool _usepositive = true;
+bool _usepositive = false;
+//bool _usepositive = true;
 
-bool _useptgen = true; // iterate to produce JEC vs pTgen
-//bool _dothree  = true; // compare three JECs instead of just two
-bool _dothree  = false; // compare two JECs
+//bool _useptgen = true; // iterate to produce JEC vs pTgen
+bool _useptgen = false; // do not iterate to produce JEC vs pTgen
+bool _dothree  = true; // compare three JECs instead of just two
+//bool _dothree  = false; // compare two JECs
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
 const double _mu = 32.8; // 2018 RunAB
@@ -256,14 +257,17 @@ bool FillCorrectionGraph_pt(double eta, double phi, FactorizedJetCorrector *JEC1
       }                                                                                              
       double e1 = getEtaPtUncert(jecUnc1, JEC1, eta, pt);                                                                                                            
       double e2 = getEtaPtUncert(jecUnc2, JEC2, eta, pt);                                                                                            
+      //      cout<<"eta = "<<eta<<" pt = "<<pt<<" e1 = "<<e1<<" e2 = "<<e2<<endl;
       double e3 = (dothree ? getEtaPtUncert(jecUnc3, JEC3, eta, pt) : 0);
       int i_point = g1d->GetN();
+      //      cout<<"i_point: "<<i_point<<" eta = "<<eta<<" pt = "<<pt<<" e1 = "<<e1<<" e2 = "<<e2<<endl;
       g1d->SetPoint(i_point, pt, y1);                                                                                                                        
       g2d->SetPoint(i_point, pt, y2);                                                                                                                        
       g3d->SetPoint(i_point, pt, y3);                                                                                                                        
       g1d->SetPointError(i_point, 0, e1);                                                                                                                        
       g2d->SetPointError(i_point, 0, e2);                                                                                                                        
       g3d->SetPointError(i_point, 0, e3);                                                                                                                        
+      //      g1d->Print();
     }
   }
   return true;
@@ -280,7 +284,7 @@ bool FillCorrectionGraph_phi(double eta, double pt, FactorizedJetCorrector *JEC1
       // Asymmetric corrections now                                                                                                                                  
       double y1 = 0.5*(getEtaPtE(JEC1, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC1, (-1)*eta, pt, energy, phi));                                    
       double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy, phi) + getEtaPtE(JEC2, (-1)*eta, pt, energy, phi));                                    
-      cout<<"y1 = "<<y1<<" y2 = "<<y2<<" eta ="<<eta<<" pt ="<<pt<<" phi = "<<phi<<endl;
+      //      cout<<"y1 = "<<y1<<" y2 = "<<y2<<" eta ="<<eta<<" pt ="<<pt<<" phi = "<<phi<<endl;
       double y3(0);                                                               
       if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta,pt, energy, phi) + getEtaPtE(JEC3, (-1)*eta,pt, energy, phi));                                            
       // negative side                                                 
@@ -339,25 +343,57 @@ void compareJECversions(string algo="AK4PFchs",
   string sgen = (_useptgen ? "corr" : "raw");
   const char *cgen = sgen.c_str();
 
-  //2018
-  string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
+
+  //2017
+  string sid1 = (_mc ? "Fall17_17Nov2017_V20_MC" : "Fall17_17Nov2017F_V12_DATA");
   const char *cid1 = sid1.c_str();
   const char *a1 = a;
-  const char *s1 = "Summer18_V1";// (13 TeV)";
-  const char *s1s = "Summer18V1";
+  const char *s1 = "Fall17_V20";// (13 TeV)";
+  const char *s1s = "Fall17_V20";
+  // const char *s1 = "Summer18_V1";// (13 TeV)";
+  // const char *s1s = "Summer18V1";
 
-  string sid2 = (_mc ? "Summer18_V1_wPhi_MC" : "Fall17_17Nov2017B_V11_DATA");
+  string sid2 = (_mc ? "Fall17_17Nov2017_V21_MC" : "Fall17_17Nov2017F_V13_DATA");
   const char *cid2 = sid2.c_str();
   const char *a2 = a;
-  const char *s2 = "Summer18_V1_wPhi";// (13 TeV)";
-  const char *s2s = "Summer18V1_wPhi";
+  const char *s2 = "Fall17_V21";// (13 TeV)";
+  const char *s2s = "Fall17_V21";
+  // const char *s2 = "Summer18_V1_wPhi";// (13 TeV)";
+  // const char *s2s = "Summer18V1_wPhi";
 
-  string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
+  string sid3 = (_mc ? "Fall17_17Nov2017_V8_MC" : "Fall17_17Nov2017F_V11_DATA");
   const char *cid3 = sid3.c_str();
   const char *a3 = a;
-  const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
-  const char *s3s = "17NovV8";
+  // const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
+  // const char *s3s = "17NovV8";
+  const char *s3 = "Fall17_V8";// (13 TeV)";
+  const char *s3s = "Fall17_V8";
 
+  /*  //2018
+  string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017F_V12_DATA");
+  const char *cid1 = sid1.c_str();
+  const char *a1 = a;
+  const char *s1 = "Fall17_V12";// (13 TeV)";
+  const char *s1s = "Fall17_V12";
+  // const char *s1 = "Summer18_V1";// (13 TeV)";
+  // const char *s1s = "Summer18V1";
+
+  string sid2 = (_mc ? "Summer18_V1_wPhi_MC" : "Fall17_17Nov2017F_V13_DATA");
+  const char *cid2 = sid2.c_str();
+  const char *a2 = a;
+  const char *s2 = "Fall17_V13";// (13 TeV)";
+  const char *s2s = "Fall17_V13";
+  // const char *s2 = "Summer18_V1_wPhi";// (13 TeV)";
+  // const char *s2s = "Summer18V1_wPhi";
+
+  string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017F_V11_DATA");
+  const char *cid3 = sid3.c_str();
+  const char *a3 = a;
+  // const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
+  // const char *s3s = "17NovV8";
+  const char *s3 = "Fall17_V11";// (13 TeV)";
+  const char *s3s = "Fall17_V11";
+  */
 
 
   str=Form("JECDatabase/textFiles/%s/%s_L1FastJet_%s.txt",cid1,cid1,a1);
@@ -577,9 +613,9 @@ void compareJECversions(string algo="AK4PFchs",
       hphi->GetYaxis()->SetRangeUser(0.70,1.10);
     }
     if (l1 && l2l3 && !res){
-      h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
-      hpt->GetYaxis()->SetRangeUser(0.9,1.70);
-      hphi->GetYaxis()->SetRangeUser(0.9,1.70);
+      h->GetYaxis()->SetRangeUser(0.9,4.2); //PUPPI
+      hpt->GetYaxis()->SetRangeUser(0.9,4.20);
+      hphi->GetYaxis()->SetRangeUser(0.9,4.20);
     }
 
     if (l1 && !l2l3 && !res){
@@ -593,9 +629,9 @@ void compareJECversions(string algo="AK4PFchs",
       hphi->GetYaxis()->SetRangeUser(0.9,1.30);
     }
     if (!l1 && l2l3 && !res){
-      h->GetYaxis()->SetRangeUser(0.9,1.70);
-      hpt->GetYaxis()->SetRangeUser(0.9,1.70);
-      hphi->GetYaxis()->SetRangeUser(0.9,1.70);
+      h->GetYaxis()->SetRangeUser(0.9,2.70);
+      hpt->GetYaxis()->SetRangeUser(0.9,2.70);
+      hphi->GetYaxis()->SetRangeUser(0.9,2.70);
     }
 
     if (l1 && l2l3 && res){
@@ -881,18 +917,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3a->SetMarkerStyle(kOpenSquare);
       g3a->SetMarkerColor(kGreen+2);
       g3a->SetLineColor(kGreen+2);
-      g3a->Draw("SAMEPL4");
+      g3a->Draw("SAMEPL3");
     }
 
     g1a->SetMarkerStyle(kFullSquare);
     g1a->SetMarkerColor(kBlue);
     g1a->SetLineColor(kBlue);
-    g1a->Draw("SAMEPL4");
+    g1a->Draw("SAMEPL3");
 
     g2a->SetMarkerStyle(kFullCircle);
     g2a->SetMarkerColor(kRed);
     g2a->SetLineColor(kRed);
-    g2a->Draw("SAMEPL4");
+    g2a->Draw("SAMEPL3");
 
 
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 30 GeV",cgen));
@@ -916,18 +952,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3b->SetMarkerStyle(kOpenSquare);
       g3b->SetMarkerColor(kGreen+2);
       g3b->SetLineColor(kGreen+2);
-      g3b->Draw("SAMEPL4");
+      g3b->Draw("SAMEPL3");
     }
 
     g1b->SetMarkerStyle(kFullSquare);
     g1b->SetMarkerColor(kBlue);
     g1b->SetLineColor(kBlue);
-    g1b->Draw("SAMEPL4");
+    g1b->Draw("SAMEPL3");
     
     g2b->SetMarkerStyle(kFullCircle);
     g2b->SetMarkerColor(kRed);
     g2b->SetLineColor(kRed);
-    g2b->Draw("SAMEPL4");
+    g2b->Draw("SAMEPL3");
     
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 100 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -950,18 +986,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3c->SetMarkerStyle(kOpenSquare);
       g3c->SetMarkerColor(kGreen+2);
       g3c->SetLineColor(kGreen+2);
-      g3c->Draw("SAMEPL4");
+      g3c->Draw("SAMEPL3");
     }
 
     g1c->SetMarkerStyle(kFullSquare);
     g1c->SetMarkerColor(kBlue);
     g1c->SetLineColor(kBlue);
-    g1c->Draw("SAMEPL4");
+    g1c->Draw("SAMEPL3");
     
     g2c->SetMarkerStyle(kFullCircle);
     g2c->SetMarkerColor(kRed);
     g2c->SetLineColor(kRed);
-    g2c->Draw("SAMEPL4");
+    g2c->Draw("SAMEPL3");
     
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 1000 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -983,18 +1019,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3f->SetMarkerStyle(kOpenSquare);
       g3f->SetMarkerColor(kGreen+2);
       g3f->SetLineColor(kGreen+2);
-      g3f->Draw("SAMEPL4");
+      g3f->Draw("SAMEPL3");
     }
 
     g1f->SetMarkerStyle(kFullSquare);
     g1f->SetMarkerColor(kBlue);
     g1f->SetLineColor(kBlue);
-    g1f->Draw("SAMEPL4");
+    g1f->Draw("SAMEPL3");
     
     g2f->SetMarkerStyle(kFullCircle);
     g2f->SetMarkerColor(kRed);
     g2f->SetLineColor(kRed);
-    g2f->Draw("SAMEPL4");
+    g2f->Draw("SAMEPL3");
     
     tex->DrawLatex(0.19,0.75,Form("p_{T,%s} = 400 GeV",cgen));
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1018,18 +1054,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d->SetMarkerStyle(kOpenSquare);
       g3d->SetMarkerColor(kGreen+2);
       g3d->SetLineColor(kGreen+2);
-      g3d->Draw("SAMEPL4");
+      g3d->Draw("SAMEPL3");
     }
 
     g1d->SetMarkerStyle(kFullSquare);
     g1d->SetMarkerColor(kBlue);
     g1d->SetLineColor(kBlue);
-    g1d->Draw("SAMEPL4");
+    g1d->Draw("SAMEPL3");
 
     g2d->SetMarkerStyle(kFullCircle);
     g2d->SetMarkerColor(kRed);
     g2d->SetLineColor(kRed);
-    g2d->Draw("SAMEPL4");
+    g2d->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta|<1.3");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1053,18 +1089,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d25->SetMarkerStyle(kOpenSquare);
       g3d25->SetMarkerColor(kGreen+2);
       g3d25->SetLineColor(kGreen+2);
-      g3d25->Draw("SAMEPL4");
+      g3d25->Draw("SAMEPL3");
     }
 
     g1d25->SetMarkerStyle(kFullSquare);
     g1d25->SetMarkerColor(kBlue);
     g1d25->SetLineColor(kBlue);
-    g1d25->Draw("SAMEPL4");
+    g1d25->Draw("SAMEPL3");
 
     g2d25->SetMarkerStyle(kFullCircle);
     g2d25->SetMarkerColor(kRed);
     g2d25->SetLineColor(kRed);
-    g2d25->Draw("SAMEPL4");
+    g2d25->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 2.5");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1087,18 +1123,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d45->SetMarkerStyle(kOpenSquare);
       g3d45->SetMarkerColor(kGreen+2);
       g3d45->SetLineColor(kGreen+2);
-      g3d45->Draw("SAMEPL4");
+      g3d45->Draw("SAMEPL3");
     }
 
     g1d45->SetMarkerStyle(kFullSquare);
     g1d45->SetMarkerColor(kBlue);
     g1d45->SetLineColor(kBlue);
-    g1d45->Draw("SAMEPL4");
+    g1d45->Draw("SAMEPL3");
 
     g2d45->SetMarkerStyle(kFullCircle);
     g2d45->SetMarkerColor(kRed);
     g2d45->SetLineColor(kRed);
-    g2d45->Draw("SAMEPL4");
+    g2d45->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.5");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1120,18 +1156,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d40->SetMarkerStyle(kOpenSquare);
       g3d40->SetMarkerColor(kGreen+2);
       g3d40->SetLineColor(kGreen+2);
-      g3d40->Draw("SAMEPL4");
+      g3d40->Draw("SAMEPL3");
     }
 
     g1d40->SetMarkerStyle(kFullSquare);
     g1d40->SetMarkerColor(kBlue);
     g1d40->SetLineColor(kBlue);
-    g1d40->Draw("SAMEPL4");
+    g1d40->Draw("SAMEPL3");
 
     g2d40->SetMarkerStyle(kFullCircle);
     g2d40->SetMarkerColor(kRed);
     g2d40->SetLineColor(kRed);
-    g2d40->Draw("SAMEPL4");
+    g2d40->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1154,18 +1190,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d00->SetMarkerStyle(kOpenSquare);
       g3d00->SetMarkerColor(kGreen+2);
       g3d00->SetLineColor(kGreen+2);
-      g3d00->Draw("SAMEPL4");
+      g3d00->Draw("SAMEPL3");
     }
 
     g1d00->SetMarkerStyle(kFullSquare);
     g1d00->SetMarkerColor(kBlue);
     g1d00->SetLineColor(kBlue);
-    g1d00->Draw("SAMEPL4");
+    g1d00->Draw("SAMEPL3");
 
     g2d00->SetMarkerStyle(kFullCircle);
     g2d00->SetMarkerColor(kRed);
     g2d00->SetLineColor(kRed);
-    g2d00->Draw("SAMEPL4");
+    g2d00->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 0.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1189,18 +1225,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d48->SetMarkerStyle(kOpenSquare);
       g3d48->SetMarkerColor(kGreen+2);
       g3d48->SetLineColor(kGreen+2);
-      g3d48->Draw("SAMEPL4");
+      g3d48->Draw("SAMEPL3");
     }
 
     g1d48->SetMarkerStyle(kFullSquare);
     g1d48->SetMarkerColor(kBlue);
     g1d48->SetLineColor(kBlue);
-    g1d48->Draw("SAMEPL4");
+    g1d48->Draw("SAMEPL3");
 
     g2d48->SetMarkerStyle(kFullCircle);
     g2d48->SetMarkerColor(kRed);
     g2d48->SetLineColor(kRed);
-    g2d48->Draw("SAMEPL4");
+    g2d48->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 4.8");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1225,18 +1261,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d50->SetMarkerStyle(kOpenSquare);
       g3d50->SetMarkerColor(kGreen+2);
       g3d50->SetLineColor(kGreen+2);
-      g3d50->Draw("SAMEPL4");
+      g3d50->Draw("SAMEPL3");
     }
 
     g1d50->SetMarkerStyle(kFullSquare);
     g1d50->SetMarkerColor(kBlue);
     g1d50->SetLineColor(kBlue);
-    g1d50->Draw("SAMEPL4");
+    g1d50->Draw("SAMEPL3");
 
     g2d50->SetMarkerStyle(kFullCircle);
     g2d50->SetMarkerColor(kRed);
     g2d50->SetLineColor(kRed);
-    g2d50->Draw("SAMEPL4");
+    g2d50->Draw("SAMEPL3");
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 5.0");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1262,18 +1298,23 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3d30->SetMarkerStyle(kOpenSquare);
       g3d30->SetMarkerColor(kGreen+2);
       g3d30->SetLineColor(kGreen+2);
-      g3d30->Draw("SAMEPL4");
+      g3d30->Draw("SAMEPL3");
     }
-
+    // cout<<"--- g1d30 ---"<<endl;
+    // g1d30->Print();
+    // cout<<"--- g2d30 ---"<<endl;
+    // g2d30->Print();
     g1d30->SetMarkerStyle(kFullSquare);
     g1d30->SetMarkerColor(kBlue);
     g1d30->SetLineColor(kBlue);
-    g1d30->Draw("SAMEPL4");
+    g1d30->Draw("SAMEPL3");
+
 
     g2d30->SetMarkerStyle(kFullCircle);
     g2d30->SetMarkerColor(kRed);
     g2d30->SetLineColor(kRed);
-    g2d30->Draw("SAMEPL4");
+    g2d30->Draw("SAMEPL3");
+
 
     tex->DrawLatex(0.19,0.75,"|#eta| = 2.9");
     if (l1) tex->DrawLatex(0.19,0.68,Form("#LT#mu#GT = %1.1f",_mu));
@@ -1297,18 +1338,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3e25pt30->SetMarkerStyle(kOpenSquare);
       g3e25pt30->SetMarkerColor(kGreen+2);
       g3e25pt30->SetLineColor(kGreen+2);
-      g3e25pt30->Draw("SAMEPL4");
+      g3e25pt30->Draw("SAMEPL3");
     }
     //    g1e25pt30->Print();
     g1e25pt30->SetMarkerStyle(kFullSquare);
     g1e25pt30->SetMarkerColor(kBlue);
     g1e25pt30->SetLineColor(kBlue);
-    g1e25pt30->Draw("SAMEPL4");
+    g1e25pt30->Draw("SAMEPL3");
 
     g2e25pt30->SetMarkerStyle(kFullCircle);
     g2e25pt30->SetMarkerColor(kRed);
     g2e25pt30->SetLineColor(kRed);
-    g2e25pt30->Draw("SAMEPL4");
+    g2e25pt30->Draw("SAMEPL3");
     
     if (_usenegative) tex->DrawLatex(0.19,0.70,Form("#eta=-2.5, p_{T,%s} = 30 GeV",cgen)); //h->GetXaxis()->SetTitle("-|#eta|");
     if (_usepositive) tex->DrawLatex(0.19,0.70,Form("#eta=+2.5, p_{T,%s} = 30 GeV",cgen));//h->GetXaxis()->SetTitle("+|#eta|");
@@ -1334,18 +1375,18 @@ bool isFine_25pt100 = FillCorrectionGraph_phi(2.5, 100, JEC1, JEC2, JEC3, jecUnc
       g3e25pt100->SetMarkerStyle(kOpenSquare);
       g3e25pt100->SetMarkerColor(kGreen+2);
       g3e25pt100->SetLineColor(kGreen+2);
-      g3e25pt100->Draw("SAMEPL4");
+      g3e25pt100->Draw("SAMEPL3");
     }
     //    g1e25pt100->Print();
     g1e25pt100->SetMarkerStyle(kFullSquare);
     g1e25pt100->SetMarkerColor(kBlue);
     g1e25pt100->SetLineColor(kBlue);
-    g1e25pt100->Draw("SAMEPL4");
+    g1e25pt100->Draw("SAMEPL3");
 
     g2e25pt100->SetMarkerStyle(kFullCircle);
     g2e25pt100->SetMarkerColor(kRed);
     g2e25pt100->SetLineColor(kRed);
-    g2e25pt100->Draw("SAMEPL4");
+    g2e25pt100->Draw("SAMEPL3");
 
     //    tex->DrawLatex(0.19,0.70,Form("|#eta|=2.5, p_{T,%s} = 100 GeV",cgen));
     if (_usenegative) tex->DrawLatex(0.19,0.70,Form("#eta=-2.5, p_{T,%s} = 100 GeV",cgen)); //h->GetXaxis()->SetTitle("-|#eta|");

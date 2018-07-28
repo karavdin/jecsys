@@ -27,7 +27,7 @@
   // //  compareJECversions("AK4PFchs",false,false,false,true,"MC"); // L1RC
   //  compareJECversions("AK4PFchs",true,false,false,false,"MC"); // L1
   // compareJECversions("AK4PFchs",true,true,false,false,"MC"); // L1L2L3
-   compareJECversions("AK4PFchs",false,true,false,false,"MC"); // L2L3
+  //   compareJECversions("AK4PFchs",false,true,false,false,"MC"); // L2L3
 
   //  compareJECversions("AK8PFchs",true,false,false,false,"MC"); // L1
   //  compareJECversions("AK8PFchs",false,true,false,false,"MC"); // L2L3
@@ -41,13 +41,13 @@
  //  compareJECversions("AK8PF",false,true,false,false,"MC"); // L2L3
  //   compareJECversions("AK8PF",true,true,false,false,"MC"); // L1L2L3
 
-  //   compareJECversions("AK4PFPuppi",true,false,false,false,"MC"); // L1
-  //   compareJECversions("AK4PFPuppi",true,true,false,false,"MC"); // L1L2L3
-  // compareJECversions("AK4PFPuppi",false,true,false,false,"MC"); // L2L3
+    compareJECversions("AK4PFPuppi",true,false,false,false,"MC"); // L1
+    compareJECversions("AK4PFPuppi",true,true,false,false,"MC"); // L1L2L3
+  compareJECversions("AK4PFPuppi",false,true,false,false,"MC"); // L2L3
 
-  //   compareJECversions("AK8PFPuppi",true,false,false,false,"MC"); // L1
-  // compareJECversions("AK8PFPuppi",false,true,false,false,"MC"); // L2L3
-  // compareJECversions("AK8PFPuppi",true,true,false,false,"MC"); // L1L2L3
+    compareJECversions("AK8PFPuppi",true,false,false,false,"MC"); // L1
+  compareJECversions("AK8PFPuppi",false,true,false,false,"MC"); // L2L3
+  compareJECversions("AK8PFPuppi",true,true,false,false,"MC"); // L1L2L3
 
 
   //compareJECversions("AK8PFchs",true,true,false,false,"MC"); // L1L2L3
