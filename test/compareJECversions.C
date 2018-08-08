@@ -33,9 +33,16 @@ bool _dothree  = false; // compare two JECs
 bool _paper    = true; // graphical settings for the paper (e.g. y-axis range)
 
 //const double _mu = 24.68;//12.8;//20;//19.83; // 20/fb at 8 TeV (htrpu)
-//const double _mu = 23.1; // 2016RunH
+//const double _mu = 23.2; // 2016 mean
+//const double _mu = 50; // 2016 max
+//const double _mu = 10; // 2016 min
+
+//const double _mu = 32.8; // 2017 mean
+//const double _mu = 60; // 2017 max
+const double _mu = 10; // 2017 min
+
 //const double _mu = 32.8; // 2018 RunAB
-const double _mu = 0.0; // 2013
+//const double _mu = 0.0; // 2013
 //const double _mu = 10.0; // TEST
 //const double _mu = 19.1; // 2016RunEF
 //const double _lumi = 19800.;
@@ -52,8 +59,8 @@ string _alg("");
 // prhovstrpu->Fit(f1,"R")
 double getRho(double mu) {
 
-  //  double p[3] = {1.009, 0.5515, 0.0003597}; // DATA (2016?)
-  double p[3] = {-0.350, 0.599, -0.0011}; // DATA (2018A)
+  double p[3] = {1.009, 0.5515, 0.0003597}; // DATA (2016?)
+  //  double p[3] = {-0.350, 0.599, -0.0011}; // DATA (2018A)
   //  cout<<"rho = "<<p[0]+p[1]*mu+p[2]*mu*mu<<endl;
   return (p[0]+p[1]*mu+p[2]*mu*mu);
 
@@ -223,19 +230,19 @@ void compareJECversions(string algo="AK4PFchs",
   // const char *s3 = "Fall12_V5";// (13 TeV)";
   // const char *s3s = "Fall12_V5";
 
-
+  
   // // // // //2017 "17Nov" JEC
-  string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
+  string sid3 = (_mc ? "Fall17_17Nov2017_V22_MC" : "Fall17_17Nov2017B_V8_DATA");
   const char *cid3 = sid3.c_str();
   const char *a3 = a;
-  const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
-  const char *s3s = "17NovV8";
+  const char *s3 = "Fall17_17Nov2017_V22";// (13 TeV)";
+  const char *s3s = "17NovV22";
 
-  string sid1 = (_mc ? "Fall17_17Nov2017_V6_MC" : "Fall17_17Nov2017B_V6_DATA");
+  string sid1 = (_mc ? "Fall17_17Nov2017_V8_MC" : "Fall17_17Nov2017B_V6_DATA");
   const char *cid1 = sid1.c_str();
   const char *a1 = a;
-  const char *s1 = "Fall17_17Nov2017_V6";// (13 TeV)";
-  const char *s1s = "17NovV6";
+  const char *s1 = "Fall17_17Nov2017_V8";// (13 TeV)";
+  const char *s1s = "17NovV8";
 
   // string sid1 = (_mc ? "Summer18_V1_MC" : "Fall17_17Nov2017B_V11_DATA");
   // const char *cid1 = sid1.c_str();
@@ -254,27 +261,27 @@ void compareJECversions(string algo="AK4PFchs",
   // const char *s2 = "Fall17_17Nov2017B_V12";// (13 TeV)";
   // const char *s2s = "17NovV12";
 
-
-
+ 
+  /*
 // //  //  // // // //2016 legacy JEC
-//   string sid2 = (_mc ? "Summer16_07Aug2017_V11_MC" : "Summer16_07Aug2017GH_V12_DATA");
-//   const char *cid2 = sid2.c_str();
-//   const char *a2 = a;
-//   const char *s2 = "Summer16_07Aug2017_V12";
-//   const char *s2s = "07AugV12";
+  string sid2 = (_mc ? "Summer16_07Aug2017_V11_MC" : "Summer16_07Aug2017GH_V12_DATA");
+  const char *cid2 = sid2.c_str();
+  const char *a2 = a;
+  const char *s2 = "Summer16_07Aug2017_V11";
+  const char *s2s = "07AugV11";
 
-//   string sid1 = (_mc ? "Summer16_23Sep2016V4_MC" : "Summer16_07Aug2017GH_V11_DATA");
-//   const char *cid1 = sid1.c_str();
-//   const char *a1 = a;
-//   const char *s1 = "Summer16_07Aug2017_V11";// (13 TeV)";
-//   const char *s1s = "07AugV11";
+  string sid1 = (_mc ? "Summer16_07Aug2017_V13_MC" : "Summer16_07Aug2017GH_V11_DATA");
+  const char *cid1 = sid1.c_str();
+  const char *a1 = a;
+  const char *s1 = "Summer16_07Aug2017_V13";// (13 TeV)";
+  const char *s1s = "07AugV13";
 
-//   string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
-//   const char *cid3 = sid3.c_str();
-//   const char *a3 = a;
-//   const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
-//   const char *s3s = "17NovV8";
-
+  string sid3 = (_mc ? "Fall17_17Nov2017_V4_MC" : "Fall17_17Nov2017B_V8_DATA");
+  const char *cid3 = sid3.c_str();
+  const char *a3 = a;
+  const char *s3 = "Fall17_17Nov2017B_V8";// (13 TeV)";
+  const char *s3s = "17NovV8";
+  */
 //   // const char *s3 = "Summer16_03Feb2017H_V9";// (13 TeV)";
 //   // const char *s3s = "03FebV9";
 
@@ -571,22 +578,28 @@ void compareJECversions(string algo="AK4PFchs",
   h->SetMaximum(2.0);
   if (_paper) {
     if (l1rc && !l1 && !l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.70,1.10);
+    if (l1rc && !l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.70,1.10);
+
     //    if (l1 && l2l3 && res)  h->GetYaxis()->SetRangeUser(0.8,1.7);
-    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.4,1.5); //PF, CHS
+    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(-0.1,1.5); //PF, CHS
+    if (l1 && l2l3 && !res)  hpt->GetYaxis()->SetRangeUser(-0.1,1.5); //PF, CHS
     //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.0,1.2); //PF, CHS vs raw pt
     //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(1.0,2.7); //PUPPI
     //    if (l1 && l2l3 && !res)  h->GetYaxis()->SetRangeUser(0.5,1.4); //AK8 PF CHS
-    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.40,1.10);
+    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(-0.1,1.10);
+    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(-0.1,1.10); //vs raw pt
+    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,1.70);//CHS, PF
+    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,1.70);//CHS, PF
+
     //    if (l1 && !l2l3 && !res) h->GetYaxis()->SetRangeUser(0.0,1.10); // vs raw pt
     //    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.90,1.30);
-    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.85,1.35);
-    if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,1.70);//CHS, PF
-    //if (!l1 && l2l3 && !res) h->GetYaxis()->SetRangeUser(0.9,2.50); //AK4 PUPPI
-    //
-    if (l1rc && !l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.70,1.10);
+    if (!l1 && !l2l3 && res) h->GetYaxis()->SetRangeUser(0.85,1.5);
+    if (!l1 && !l2l3 && res) hpt->GetYaxis()->SetRangeUser(0.85,1.5);
+
+
     //    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.4,1.10);
-    if (l1 && !l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.0,1.10); //vs raw pt
-    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,1.90);//CHS
+
+
     //    if (!l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.9,2.50);//PUPPI
     //    if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.7,1.2);// AK8 PF
     if (l1 && l2l3 && !res) hpt->GetYaxis()->SetRangeUser(0.5,1.5);// PF CHS
@@ -932,7 +945,8 @@ void compareJECversions(string algo="AK4PFchs",
     			  + getEtaPtE(JEC1, (-1)*eta, pt, energy));
     	double y2 = 0.5*(getEtaPtE(JEC2, (+1)*eta, pt, energy)
     			  + getEtaPtE(JEC2, (-1)*eta, pt, energy));
-    	//	cout<<"y1 = "<<y1<<" "<<getEtaPtE(JEC1, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC1, (-1)*eta, pt, energy)<<endl;
+	// cout<<"y1 = "<<y1<<" "<<getEtaPtE(JEC1, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC1, (-1)*eta, pt, energy)<<endl;
+	// cout<<"y2 = "<<y2<<" "<<getEtaPtE(JEC2, (+1)*eta, pt, energy)<<" "<<getEtaPtE(JEC2, (-1)*eta, pt, energy)<<endl;
     	double y3(0);
     	if (dothree) y3 = 0.5*(getEtaPtE(JEC3, (+1)*eta, pt, energy)
     				+ getEtaPtE(JEC3, (-1)*eta, pt, energy));
@@ -956,7 +970,7 @@ void compareJECversions(string algo="AK4PFchs",
     	g2a->SetPoint(g2a->GetN(), eta, y2);
     	g3a->SetPoint(g3a->GetN(), eta, y3);
     	g21a->SetPoint(g21a->GetN(),eta, y2/y1);
-    	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
+	//	std::cout<<"g21a->GetN() = "<<g21a->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<" y2 = "<<y2<<" y1 = "<<y1<<std::endl;
     	//
     	g1a_pl->SetPoint(g1a_pl->GetN(), eta, y1*(1+e1));
     	g1a_mn->SetPoint(g1a_mn->GetN(), eta, y1*(1-e1));
@@ -1009,7 +1023,7 @@ void compareJECversions(string algo="AK4PFchs",
 	g2b->SetPoint(g2b->GetN(), eta, y2);
 	g3b->SetPoint(g3b->GetN(), eta, y3);
 	g21b->SetPoint(g21b->GetN(),eta, y2/y1);
-	//	std::cout<<"g21b->GetN() = "<<g21b->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
+	//std::cout<<"g21b->GetN() = "<<g21b->GetN()<<" eta = "<<eta<<"  y2/y1 = "<< y2/y1<<std::endl;
 	//
 	g1b_pl->SetPoint(g1b_pl->GetN(), eta, y1*(1+e1));
 	g1b_mn->SetPoint(g1b_mn->GetN(), eta, y1*(1-e1));
@@ -2808,6 +2822,7 @@ void compareJECversions(string algo="AK4PFchs",
 			    cgen,ptbins[i]),"L");
     } // for i
     tex->DrawLatex(0.70,0.85,a);
+    if (l1) tex->DrawLatex(0.19,0.38,Form("#LT#mu#GT = %1.1f",_mu));
     //cmsPrel(_lumi);
     c0->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_%sover%s.pdf",a,cm,cs,s2s,s1s));
   }
@@ -2870,7 +2885,7 @@ void compareJECversions(string algo="AK4PFchs",
     //if (!mc) cmsPrel(_lumi);
     //if (mc)  cmsPrel(0);
     gPad->RedrawAxis();
-    
+    if (l1) tex->DrawLatex(0.19,0.38,Form("#LT#mu#GT = %1.1f",_mu));
     if(_pdf) c2->SaveAs(Form("pdf/compareJECversions_%s_%s_%s_Ratios.pdf",a,cm,cs));
   } // Ratio plots
 } // compareJECversions
